@@ -44,8 +44,8 @@ class FileReader:
 
     def reading_vaisala_file(self):
         vaisala_file_path = self.making_file_path(file_directory='Vaisala\\Station02\\2022\\10',
-                                                  file_name=self.vaisala_file_name)  # file_directory переделать к хуям, а
-        # лучше разделить file_reader вайсалы, урагана, нейтрона, так как установки независимы
+                                                  file_name=self.vaisala_file_name)  # file_directory переделать к хуям,
+        # а лучше разделить file_reader вайсалы, урагана, нейтрона, так как установки независимы
         vaisala_file = pd.read_csv(vaisala_file_path,
                                    sep=r'\t', skipinitialspace=True, index_col=False,
                                    engine='python')

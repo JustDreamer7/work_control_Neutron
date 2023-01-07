@@ -72,7 +72,8 @@ class VaisalaFileReader(FileReader):
 
 
 if __name__ == "__main__":
-    file_reader = VaisalaFileReader(path_to_files='D:\\Neutron\\Vaisala\\Station02', single_date=datetime.date(2022, 1, 3))
+    file_reader = VaisalaFileReader(path_to_files='D:\\Neutron\\Vaisala\\Station02',
+                                    single_date=datetime.date(2022, 1, 3))
     # print(file_reader.path_to_files)
     # print(file_reader.reading_file())
     print(issubclass(VaisalaFileReader, FileReader))

@@ -1,4 +1,5 @@
-from file_reader.abs_file_reader import FileReader
+# from file_reader.abs_file_reader import FileReader
+from abs_file_reader import FileReader
 import pandas as pd
 import pathlib
 import datetime
@@ -49,8 +50,18 @@ class NeutronFileReader(FileReader):
             file_day_after = file_data[file_data.index >= bad_end_time_index[0]]
             file_day_after['date'] = [file_day_after['date'].item() + datetime.timedelta(
                 days=1)] * len(file_day_after.index)
-            return pd.concat([file_today, file_day_after], ignore_index=True)
+            file_data = pd.concat([file_today, file_day_after], ignore_index=True)
+        file_data['datetime'] = [datetime.datetime.combine(date, time) for date, time in
+                                 zip(file_data['date'], file_data['time'])]
         return file_data
+
+    @staticmethod
+    def change_neutron_data_to_zero(neutron_data, pressure_breaks_dict):
+        for det in range(1, 5):
+            for i, _ in enumerate(pressure_breaks_dict['StartDateTime']):
+                neutron_data[f'Nn{det}'] = neutron_data[f'Nn{det}'].where(
+                    (neutron_data['datetime'] < pressure_breaks_dict['StartDateTime'][i]) | (
+                            neutron_data['datetime'] > pressure_breaks_dict['EndDateTime'][i]), 0)
 
     @staticmethod
     def preparing_data(start_date, end_date, path_to_files):

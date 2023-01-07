@@ -54,12 +54,13 @@ class PressureFileReader(FileReader):
         time_difference = pressure_data['datetime'].diff()[1:]
         time_difference = time_difference[time_difference > datetime.timedelta(seconds=25)]
         for idx in time_difference.index:
+            breaks_dict['StartDateTime'].append(pressure_data['datetime'][idx - 1])
+            breaks_dict['EndDateTime'].append(pressure_data['datetime'][idx])
             breaks_dict['StartDate'].append(pressure_data['date'][idx - 1])
             breaks_dict['EndDate'].append(pressure_data['date'][idx])
             breaks_dict['StartTime'].append(pressure_data['time'][idx - 1])
             breaks_dict['EndTime'].append(pressure_data['time'][idx])
-            breaks_dict['CuttingIdx'].append(pressure_data['time'][idx])
-
+            breaks_dict['CuttingIdx'].append(idx)
         return breaks_dict
 
     @staticmethod
@@ -69,24 +70,23 @@ class PressureFileReader(FileReader):
         for idx in breaks['CuttingIdx']:
             divided_pressure_data.append(pressure_data.iloc[start_idx:idx].reset_index(drop=True))
             start_idx = idx
+        divided_pressure_data.append(pressure_data.iloc[start_idx:].reset_index(drop=True))
         return divided_pressure_data
 
     @staticmethod
     def change_pressure_interval(data):
-        counter = 0
-        summator = 0
+        counter, summator = 0, 0
         mean_pressure = []
         for i in range(len(data['time'])):
             counter += 1
             summator += data['P_datch'][i]
             if (data['time'][i].minute % 10 == 0 or data['time'][i].minute % 5 == 0) and counter > 7:
                 mean_pressure.append(round(summator / counter / 0.75006156, 2))
-                summator = 0
-                counter = 0
+                counter, summator = 0, 0
         mean_pressure.append(round(summator / counter / 0.75006156, 2))
         return mean_pressure
 
-    def correct_pressure_data(self, pressure_data):
+    def correct_pressure_data(self, pressure_data, neutron_data):
         breaks_dict = self.finding_breaks(pressure_data)
         if any(breaks_dict):
             div_pressure_data = self.cutting_pressure_data(pressure_data, breaks_dict)
@@ -96,9 +96,16 @@ class PressureFileReader(FileReader):
                 mean_pressure = self.change_pressure_interval(single_break)
                 mean_pressure_list.append(mean_pressure)
             corr_mean_result = mean_pressure_list[0]
-            # for i in range(1, len(mean_pressure_list)):
-            #     corr_mean_result = corr_mean_result + [0] * cutting_len[i - 1] + mean_pressure_list[i]
-            return corr_mean_result
+            blank_len = []
+            for i, _ in enumerate(breaks_dict['StartDateTime']):
+                blank_len.append(
+                    len(neutron_data.index) - len(
+                        neutron_data[(neutron_data['datetime'] < breaks_dict['StartDateTime'][i]) | (
+                                neutron_data['datetime'] > breaks_dict['EndDateTime'][i])].index))
+            for i in range(1, len(mean_pressure_list)):
+                corr_mean_result = corr_mean_result + [0] * blank_len[i - 1] + mean_pressure_list[i]
+            return corr_mean_result  # на этом этапе длина нейтронной даты и даты урагана не совпадает,
+            # так как в нейтронной дате есть еще предыдущий день и одно событие следующего
         return self.change_pressure_interval(pressure_data)
 
     @staticmethod
@@ -117,9 +124,14 @@ class PressureFileReader(FileReader):
 
 
 if __name__ == "__main__":
+    from neutron_file_reader import NeutronFileReader
+
+    neut_concat_df = NeutronFileReader.preparing_data(start_date=datetime.date(2020, 1, 1),
+                                                      end_date=datetime.date(2020, 1, 3),
+                                                      path_to_files='D:\\Neutron')
     file_reader = PressureFileReader(path_to_files='D:\\Neutron', single_month=datetime.date(2020, 1, 1))
     print(issubclass(PressureFileReader, FileReader))
     concat_df = PressureFileReader.preparing_data(start_date=datetime.date(2020, 1, 1),
-                                                  end_date=datetime.date(2020, 2, 3),
+                                                  end_date=datetime.date(2020, 1, 3),
                                                   path_to_files='D:\\Neutron')
-    print(file_reader.correct_pressure_data(concat_df))
+    print(file_reader.correct_pressure_data(concat_df, neut_concat_df))

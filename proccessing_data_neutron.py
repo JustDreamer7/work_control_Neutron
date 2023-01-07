@@ -36,7 +36,6 @@ class ProccessingNeutron:
             n_file[(n_file[f'Nn{i}'] == 0) & (n_file[f'N_noise{i}'] == 0)])) * 5 / 60, 2) for i in range(1, 5))
 
     def count_breaks(self):
-        self.n_data['datetime'] = [datetime.datetime.combine(date,time) for date, time in zip(self.n_data['date'], self.n_data['time'])]
         breaks_dict = defaultdict(list)
         for det in range(1, 5):
             if len(self.n_data[(self.n_data[f'Nn{det}'] == 0) & (self.n_data[f'N_noise{det}'] == 0)]) != 0:
