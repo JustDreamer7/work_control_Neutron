@@ -62,6 +62,10 @@ class NeutronFileReader(FileReader):
                 neutron_data[f'Nn{det}'] = neutron_data[f'Nn{det}'].where(
                     (neutron_data['datetime'] < pressure_breaks_dict['StartDateTime'][i]) | (
                             neutron_data['datetime'] > pressure_breaks_dict['EndDateTime'][i]), 0)
+            for i, _ in enumerate(pressure_breaks_dict['StartDateTime']):
+                neutron_data[f'N_noise{det}'] = neutron_data[f'N_noise{det}'].where(
+                    (neutron_data['datetime'] < pressure_breaks_dict['StartDateTime'][i]) | (
+                            neutron_data['datetime'] > pressure_breaks_dict['EndDateTime'][i]), 0)
 
     @staticmethod
     def preparing_data(start_date, end_date, path_to_files):
