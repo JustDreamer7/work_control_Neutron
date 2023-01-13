@@ -1,12 +1,14 @@
-# from docx.enum.style import WD_STYLE_TYPE
-# from docx.enum.table import WD_TABLE_ALIGNMENT
-# from docx.shared import Cm
-# from docx.shared import Inches
-# from docx.shared import Pt
+
 import datetime
 
+from docx.enum.style import WD_STYLE_TYPE
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.enum.text import WD_BREAK
 from docx.oxml import OxmlElement, ns
+from docx.shared import Cm
+from docx.shared import Inches
+from docx.shared import Pt
 
 
 def create_element(name):
@@ -38,6 +40,62 @@ def add_page_number(paragraph):
     page_num_run._r.append(instr_text)
     page_num_run._r.append(fld_char2)
 
+def page_breaker(doc):
+    run = doc.add_paragraph().add_run()
+    run.add_break(WD_BREAK.PAGE)
+
+def add_new_styles(document, style_name: str, font_size: int, bold: bool = False, italic: bool = False):
+    """Метод, добавляющий стили текста."""
+    styles = document.styles
+    styles.add_style(style_name, WD_STYLE_TYPE.PARAGRAPH)
+    style = document.styles[style_name]
+    font = style.font
+    font.name = 'Times New Roman'
+    font.size = Pt(font_size)
+    font.bold = bold
+    font.italic = italic
+
+def section_choice(document):
+    """Метод, добавляющий отступы в документе word."""
+    sections = document.sections
+    for section in sections:
+        section.top_margin = Cm(1.5)
+        section.bottom_margin = Cm(1.5)
+        section.left_margin = Cm(1.5)
+        section.right_margin = Cm(1.5)
+
+def make_table_bold(table, cols, rows):
+    """Метод, изменяющий вес шрифтов в таблицах и выравнивающий таблицу по центру."""
+    for row in range(1):
+        for col in range(cols):
+            # получаем ячейку таблицы
+            cell = table.cell(row, col)
+            # записываем в ячейку данные
+            run = cell.paragraphs[0].runs[0]
+            run.font.bold = True
+
+    for row in range(1, rows):
+        for col in range(1):
+            # получаем ячейку таблицы
+            cell = table.cell(row, col)
+            # записываем в ячейку данные
+            run = cell.paragraphs[0].runs[0]
+            run.font.bold = True
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+def change_cell_size(table, column_num, size_arr):
+    """Метод, меняющий размер клеток в таблице."""
+    for i in range(column_num):
+        for cell in table.columns[i].cells:
+            cell.width = Inches(size_arr[i])
+
+def adding_graphic(document, title, picture_path, width: float, height: float):
+    """Метод, добавляющий в word график."""
+    document.add_picture(picture_path, width=Inches(width), height=Inches(height))
+    last_paragraph = document.paragraphs[-1]
+    last_paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    picture_title = document.add_paragraph(title, style='PItalic')
+    picture_title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
 def time_breaks_counter(brake_frame):
     breaks = len(brake_frame.index)

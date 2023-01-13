@@ -27,7 +27,6 @@ class GraphsDrawing:
                    cycler.cycler('color', ['r', 'g', 'b', 'darkblue', 'lawngreen', 'hotpink', 'c', 'y', 'm', 'orange',
                                            'burlywood', 'darkmagenta', 'grey', 'darkslategray', 'saddlebrown',
                                            'lightsalmon'])))
-        return None
 
     def graph_format(self, y_lim, x_lim, x_label, y_label):
         """Метод, прописывающий неизменный формат для графиков, желательно добавить смену figsize и fontsize"""
