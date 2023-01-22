@@ -83,13 +83,52 @@ class GraphsDrawing:
         path_pic = f'{self.path_to_pic}\\n_amp{single_date.day}-{single_date.month}-{single_date.year}.png'
         plt.savefig(path_pic, bbox_inches='tight')
         return path_pic
+
     # Доделать функцию с графиком.
-    @staticmethod
-    def pressure_graph(type_of_impulse_sign):
+    def pressure_graph(self, x, y, fit_line, type_of_impulse):
         fig, axs = plt.subplots(figsize=(18, 18), nrows=4, sharex='col')
         for det in range(1, 5):
             ax = axs[det - 1]
             ax.set_title(f'Детектор {det}', fontsize=18, loc='left')
-            if det == 5:
+            if det == 4:
                 ax.set_xlabel('Давление', fontsize=20)
-            ax.set_ylabel(type_of_impulse_sign + r'$, (300с)^{-1}$', fontsize=15)
+            if type_of_impulse == 'Nn':
+                ax.set_ylabel('Cкорость счета' + r'$, (300с)^{-1}$', fontsize=15)
+            else:
+                ax.set_ylabel('Cкорость счета шумов' + r'$, (300с)^{-1}$', fontsize=15)
+
+            ax.scatter(x, y, label=type_of_impulse + f'{det}', s=5)
+            ax.scatter(x, fit_line, s=6)
+
+        path_pic = f'{self.path_to_pic}\\{type_of_impulse}(P){self.start_date.day}-' \
+                   f'{self.start_date.month}-{self.end_date.day}-{self.end_date.month}.png'
+        plt.savefig(path_pic, bbox_inches='tight')
+        return path_pic
+
+    def neutron_graph(self, x, y, pressure_data, type_of_impulse):
+        fig, axs = plt.subplots(figsize=(18, 18), nrows=4, sharex='col')
+        for det in range(1, 5):
+            ax = axs[det - 1]
+            ax.set_title(f'Детектор {det}', fontsize=18, loc='left')
+            ax.grid()
+            ax0 = ax.twinx()
+            ax0.set_ylim([970, 1020])
+            ax0.set_ylabel('Давление, мбар', fontsize=18)
+            if det == 4:
+                ax.set_xlabel('Дата', fontsize=20)
+            ax.set_ylabel('Cкорость счета, (300с)⁻¹', fontsize=16)
+            # ax.set_xlim([0, merge_utc.index.max()])
+            ax.minorticks_on()
+            ax.tick_params(axis='both', which='minor', direction='out', length=10, width=2, pad=10)
+            ax.tick_params(axis='both', which='major', direction='out', length=20, width=4, pad=10)
+            # ax.plot(merge_utc.index, merge_utc['Nn%s' % i], label=f'N{det}' , linewidth=1, color='black')
+            # ax.plot(merge_utc.index, merge_utc['corr_N%s' % i], label=f'N{det}', linewidth=1,color='red')
+
+            ax0.scatter(range(0, len(pressure_data)), pressure_data, s=2, c='blue')
+            # ax.set_xticks(list(range(0, merge_utc.index.max(), 288 * 4)))
+            # ax.set_xticklabels(merge_utc['DATE'].dt.date.unique().tolist()[::4])
+
+        path_pic = f'{self.path_to_pic}\\{type_of_impulse}300c{self.start_date.day}-' \
+                   f'{self.start_date.month}-{self.end_date.day}-{self.end_date.month}.png'
+        plt.savefig(path_pic, bbox_inches='tight')
+        return path_pic

@@ -1,26 +1,28 @@
-# pip install PyQt6
 # pyuic6 messenger.ui -o clientui.py
 
 # В этом py файле описана логика взаимодействия с интерфейсом
 
 
-import os
 import datetime
+import os
 
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtWidgets import *
 
 from exceptions import DateError
-
-# from First_Proccessing import First_Proccessing
-# from Sec_Proccessing import secProccessing
-
-# from errors import *
-
-
+# from file_reader.db_file_reader import DbFileReader
+from file_reader.mask_file_reader import MaskFileReader
+from file_reader.neutron_file_reader import NeutronFileReader
+from file_reader.pressure_file_reader import PressureFileReader
+from file_reader.vaisala_file_reader import VaisalaFileReader
+from interfaces.drctryChoice import Ui_drctryChoice
 from interfaces.interface import Ui_MainWindow
 from interfaces.takeFiles import Ui_takeFiles
-from interfaces.drctryChoice import Ui_drctryChoice
+from make_excel_neutron import make_excel_neutron
+from make_report_neutron import make_report_neutron
+
+
+# from errors import *
 
 
 class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -104,7 +106,7 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
             with open('path_neutron_report.txt', 'r') as f:
                 report_path = f.read()
             picture_path = report_path + '/without_mask_Pics'
-            file_path = report_path + '/without_mask_N_files'
+            files_path = report_path + '/without_mask_N_files'
             with open('path_neutron_files.txt', 'r') as f:
                 file_neutron_data = f.read()
             with open('path_uragan_files.txt', 'r') as f:
@@ -118,16 +120,26 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
                     print(f"Создать директорию {picture_path} не удалось")
                 else:
                     print(f"Успешно создана директория {picture_path}")
-            if ~os.path.exists(file_path):
+            if ~os.path.exists(files_path):
                 try:
-                    os.mkdir(file_path)
+                    os.mkdir(files_path)
                 except OSError:
-                    print(f"Создать директорию {file_path} не удалось")
+                    print(f"Создать директорию {files_path} не удалось")
                 else:
-                    print(f"Успешно создана директория {file_path}")
-            # First_Proccessing(int(lst[0][0]), int(lst[0][1]), int(lst[0][2]), int(lst[1][0]), int(lst[1][1]),
-            #                       int(lst[1][2]), dirlist, piclist, filelist, file_neutron_data, file_uragan_pressure,
-            #                       file_vaisala_pressure, proccessing_pressure)
+                    print(f"Успешно создана директория {files_path}")
+            neutron_data = NeutronFileReader.preparing_data(start_date=start_date,
+                                                            end_date=end_date,
+                                                            path_to_files=file_neutron_data)
+            pressure_data = PressureFileReader.preparing_data(start_date=start_date,
+                                                              end_date=end_date,
+                                                              path_to_files=file_uragan_pressure)
+            vaisala_data = VaisalaFileReader.preparing_data(start_date=start_date,
+                                                            end_date=end_date,
+                                                            path_to_files=file_vaisala_pressure)
+            make_excel_neutron(start_date=start_date, end_date=end_date, files_path=files_path,
+                               picture_path=picture_path, neutron_data=neutron_data, pressure_data=pressure_data,
+                               vaisala_data=vaisala_data, proccessing_pressure=proccessing_pressure)
+
         except PermissionError:
             print("Закройте предыдущую версию файла!")
         except DateError:
@@ -161,9 +173,25 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
                     print(f"Создать директорию {picture_path} не удалось")
                 else:
                     print(f"Успешно создана директория {picture_path}")
-            # secProccessing(int(lst[0][0]), int(lst[0][1]), int(lst[0][2]), int(lst[1][0]), int(lst[1][1]),
-            #               int(lst[1][2]), dirlist, piclist, file_neutron_data, file_uragan_pressure,
-            #               proccessing_pressure, file_mask)
+            neutron_data = NeutronFileReader.preparing_data(start_date=start_date,
+                                                            end_date=end_date,
+                                                            path_to_files=file_neutron_data)
+            pressure_data = PressureFileReader.preparing_data(start_date=start_date,
+                                                              end_date=end_date,
+                                                              path_to_files=file_uragan_pressure)
+            for mask_det in range(1, 5):
+                try:
+                    mask_reader = MaskFileReader(path_to_files=file_mask, detector=mask_det)
+                    mask_period_data, mask_without_periods = mask_reader.reading_file()
+                    neutron_data = MaskFileReader.correct_neutron_data(neutron_data=neutron_data,
+                                                                       mask_without_periods=mask_without_periods,
+                                                                       period_mask=mask_period_data,
+                                                                       detector=mask_det)
+                except FileNotFoundError:
+                    print(f"Mask data from {mask_det} detector doesn't exist")
+            make_report_neutron(start_date=start_date, end_date=end_date, report_path=report_path,
+                                picture_path=picture_path, neutron_data=neutron_data, pressure_data=pressure_data,
+                                proccessing_pressure=proccessing_pressure)
         except PermissionError:
             print("Закройте предыдущую версию файла!")
         except DateError:

@@ -9,12 +9,15 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 import word_addition
 
 
-def make_report_neutron(start_date, end_date, report_path, picture_path, concat_n_df_1, concat_n_df_2):
+def make_report_neutron(start_date, end_date, report_path, picture_path, neutron_data, pressure_data,
+                        proccessing_pressure):
     t1 = time.time()
 
     warnings.filterwarnings(action='ignore')
 
     days_amount = len(pd.date_range(start_date, end_date))
+
+
 
     # Далее формирование и запись в word-файл
     doc = Document()
@@ -142,3 +145,5 @@ def make_report_neutron(start_date, end_date, report_path, picture_path, concat_
                                  picture_path=)
 
     word_addition.page_breaker(doc=doc)
+
+    print(time.time() - t1)

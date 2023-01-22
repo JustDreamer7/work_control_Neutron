@@ -17,8 +17,8 @@ class ProccessingNeutron:
         parameters_dict = defaultdict(list)
         for det in range(1, 5):
 
-            n_fit_params = self.count_parameters(det, 'Nn')
-            noise_fit_params = self.count_parameters(det, 'N_noise')
+            n_fit_params, n_fit_line = self.count_parameters(det, 'Nn')
+            noise_fit_params, noise_fit_line = self.count_parameters(det, 'N_noise')
 
             parameters_dict['N_0'].append(n_fit_params[1])
             parameters_dict['N_0_noise'].append(noise_fit_params[1])
@@ -29,6 +29,13 @@ class ProccessingNeutron:
             parameters_dict['B_factor'].append(n_fit_params[0])
             parameters_dict['B_factor_noise'].append(noise_fit_params[0])
 
+            parameters_dict['fit_line_noise'].append(noise_fit_line)
+            parameters_dict['fit_line'].append(n_fit_line)
+
+            parameters_dict['correction_for_n'].append([(x - self.default_pressure) * n_fit_params[0] if x != 0 else 0
+                                                        for x in self.pressure_data])
+            parameters_dict['correction_for_noise'].append([(x - self.default_pressure) * noise_fit_params[0]
+                                                            if x != 0 else 0 for x in self.pressure_data])
             for single_date in pd.date_range(start_date, end_date):
                 worktime_dict['Date'].append(single_date)
                 single_n_data = self.n_data[self.n_data['date'] == single_date].reset_index(drop=True)
@@ -42,7 +49,7 @@ class ProccessingNeutron:
         worktime_frame = pd.DataFrame(worktime_dict)
         break_frame = pd.DataFrame(break_dict)
 
-        return worktime_frame, break_frame
+        return worktime_frame, break_frame, parameters_dict
 
     @staticmethod
     def count_worktime(n_file, det):
@@ -80,6 +87,7 @@ class ProccessingNeutron:
     def count_parameters(self, det, type_of_impulse):
         corr_pressure = [self.pressure_data[idx] for idx in
                          self.n_data[self.n_data[type_of_impulse + f'{det}'] != 0].index]
+
         def linear(x, a, b):
             return a * x + b
 
@@ -87,7 +95,7 @@ class ProccessingNeutron:
                                           self.n_data[self.n_data[type_of_impulse + f'{det}'] != 0][
                                               type_of_impulse + f'{det}'])
         fit_line = [y * fit_params[0] + fit_params[1] for y in [x - self.default_pressure for x in corr_pressure]]
-        return fit_params
+        return fit_params, fit_line
 
 
 if __name__ == "__main__":
