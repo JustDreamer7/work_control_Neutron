@@ -1,3 +1,5 @@
+import pathlib
+
 import cycler
 from matplotlib import pyplot as plt
 
@@ -50,19 +52,21 @@ class GraphsDrawing:
         for det in range(1, 5):
             plt.plot(r_dist_frame.index, r_dist_frame[f'det_{det}'], label=f'Детектор {det}', linewidth=4.5)
         plt.legend(loc="upper right")
-        path_pic = f'{self.path_to_pic}\\r_dist{single_date.day}-{single_date.month}-{single_date.year}.png'
+        path_pic = pathlib.PurePath(self.path_to_pic, f'r_dist{single_date.day}-{single_date.month}'
+                                                      f'-{single_date.year}.png')
         plt.savefig(path_pic, bbox_inches='tight')
         return path_pic
 
     def front_time_dist(self, front_time_frame, single_date):
         self.graph_format(y_lim=[1, 10000], x_lim=[0, 200], x_label='Время нарастаний фронта', y_label='Число событий')
         plt.yscale('log')
-        plt.text(43, 12000, f"за {single_date.day:02}.{single_date.month:02}.{single_date.year:02}", bbox=self.box,
+        plt.text(110, 10000, f"за {single_date.day:02}.{single_date.month:02}.{single_date.year:02}", bbox=self.box,
                  fontsize=20)
         for det in range(1, 5):
             plt.plot(front_time_frame.index, front_time_frame[f'det_{det}'], label=f'Детектор {det}', linewidth=4.5)
         plt.legend(loc="upper right")
-        path_pic = f'{self.path_to_pic}\\front_time{single_date.day}-{single_date.month}-{single_date.year}.png'
+        path_pic = pathlib.PurePath(self.path_to_pic, f'front_time{single_date.day}-{single_date.month}'
+                                                      f'-{single_date.year}.png')
         plt.savefig(path_pic, bbox_inches='tight')
         return path_pic
 
@@ -73,19 +77,21 @@ class GraphsDrawing:
                  fontsize=20)
         n_line_list, noise_line_list = [], []
         for det in range(1, 5):
-            n_line, =  plt.plot(n_amp_frame.index, n_amp_frame[f'det_{det}'], label=f'Детектор {det}', linewidth=4.5)
-            noise_line, =  plt.plot(n_amp_frame.index, n_amp_frame[f'noise_{det}'], label=f'Детектор {det}', linewidth=4.5)
+            n_line, = plt.plot(n_amp_frame.index, n_amp_frame[f'det_{det}'], label=f'Детектор {det}', linewidth=4.5)
+            noise_line, = plt.plot(n_amp_frame.index, n_amp_frame[f'noise_{det}'], label=f'Детектор {det}',
+                                   linewidth=4.5)
             n_line_list.append(n_line)
             noise_line_list.append(noise_line)
-        first_legend = plt.legend(handles=n_line_list, loc='upper center', bbox_to_anchor=(0.75, 1), title='Нейтроны')
+        first_legend = plt.legend(handles=n_line_list, loc='upper center', bbox_to_anchor=(0.6, 1), title='Нейтроны')
         plt.gca().add_artist(first_legend)
         plt.legend(handles=noise_line_list, loc='upper right', title='Шумы')
-        path_pic = f'{self.path_to_pic}\\n_amp{single_date.day}-{single_date.month}-{single_date.year}.png'
+        path_pic = pathlib.PurePath(self.path_to_pic, f'n_amp{single_date.day}-{single_date.month}'
+                                                      f'-{single_date.year}.png')
         plt.savefig(path_pic, bbox_inches='tight')
         return path_pic
 
     # Доделать функцию с графиком.
-    def pressure_graph(self, x, y, fit_line, type_of_impulse):
+    def pressure_graph(self, corr_pressure_data: list, neutron_data, fit_line: list, type_of_impulse: str):
         fig, axs = plt.subplots(figsize=(18, 18), nrows=4, sharex='col')
         for det in range(1, 5):
             ax = axs[det - 1]
@@ -97,17 +103,24 @@ class GraphsDrawing:
             else:
                 ax.set_ylabel('Cкорость счета шумов' + r'$, (300с)^{-1}$', fontsize=15)
 
-            ax.scatter(x, y, label=type_of_impulse + f'{det}', s=5)
-            ax.scatter(x, fit_line, s=6)
+            ax.scatter(corr_pressure_data[det - 1],
+                       neutron_data[neutron_data[type_of_impulse + f'{det}'] != 0][type_of_impulse + f'{det}'],
+                       label=type_of_impulse + f'{det}', s=5)
+            ax.scatter(corr_pressure_data[det - 1], fit_line[det - 1], s=6)
 
-        path_pic = f'{self.path_to_pic}\\{type_of_impulse}(P){self.start_date.day}-' \
-                   f'{self.start_date.month}-{self.end_date.day}-{self.end_date.month}.png'
+        path_pic = pathlib.PurePath(self.path_to_pic, f'{type_of_impulse}(P){self.start_date.day}-'
+                                                      f'{self.start_date.month}-{self.end_date.day}-'
+                                                      f'{self.end_date.month}.png')
         plt.savefig(path_pic, bbox_inches='tight')
         return path_pic
 
-    def neutron_graph(self, x, y, pressure_data, type_of_impulse):
+    def neutron_graph(self, neutron_data, corr_for_neutron_data: list, pressure_data, type_of_impulse: str):
         fig, axs = plt.subplots(figsize=(18, 18), nrows=4, sharex='col')
         for det in range(1, 5):
+            neutron_data[f'corr_{type_of_impulse}{det}'] = neutron_data[f'{type_of_impulse}{det}'] - \
+                                                           corr_for_neutron_data[det - 1]
+            neutron_data[f'corr_{type_of_impulse}{det}'].where(neutron_data[f'corr_{type_of_impulse}{det}'] > 10, 0,
+                                                               inplace=True)
             ax = axs[det - 1]
             ax.set_title(f'Детектор {det}', fontsize=18, loc='left')
             ax.grid()
@@ -117,18 +130,21 @@ class GraphsDrawing:
             if det == 4:
                 ax.set_xlabel('Дата', fontsize=20)
             ax.set_ylabel('Cкорость счета, (300с)⁻¹', fontsize=16)
-            # ax.set_xlim([0, merge_utc.index.max()])
+            ax.set_xlim([0, neutron_data.index.max()])
             ax.minorticks_on()
             ax.tick_params(axis='both', which='minor', direction='out', length=10, width=2, pad=10)
             ax.tick_params(axis='both', which='major', direction='out', length=20, width=4, pad=10)
-            # ax.plot(merge_utc.index, merge_utc['Nn%s' % i], label=f'N{det}' , linewidth=1, color='black')
-            # ax.plot(merge_utc.index, merge_utc['corr_N%s' % i], label=f'N{det}', linewidth=1,color='red')
+            ax.plot(neutron_data.index, neutron_data[f'{type_of_impulse}{det}'], label=f'N{det}', linewidth=1,
+                    color='black')
+            ax.plot(neutron_data.index, neutron_data[f'corr_{type_of_impulse}{det}'], label=f'{type_of_impulse}{det}',
+                    linewidth=1, color='red')
 
             ax0.scatter(range(0, len(pressure_data)), pressure_data, s=2, c='blue')
-            # ax.set_xticks(list(range(0, merge_utc.index.max(), 288 * 4)))
-            # ax.set_xticklabels(merge_utc['DATE'].dt.date.unique().tolist()[::4])
+            ax.set_xticks(list(range(0, neutron_data.index.max(), 288 * 4)))
+            ax.set_xticklabels(neutron_data['date'].unique().tolist()[::4])
 
-        path_pic = f'{self.path_to_pic}\\{type_of_impulse}300c{self.start_date.day}-' \
-                   f'{self.start_date.month}-{self.end_date.day}-{self.end_date.month}.png'
+        path_pic = pathlib.PurePath(self.path_to_pic, f'{type_of_impulse}300c{self.start_date.day}-'
+                                                      f'{self.start_date.month}-{self.end_date.day}-'
+                                                      f'{self.end_date.month}.png')
         plt.savefig(path_pic, bbox_inches='tight')
         return path_pic

@@ -2,9 +2,13 @@ import datetime
 import pathlib
 from collections import defaultdict
 
+import numpy as np
 import pandas as pd
 
-from abs_file_reader import FileReader
+from file_reader.abs_file_reader import FileReader
+
+
+# from abs_file_reader import FileReader
 
 
 class PressureFileReader(FileReader):
@@ -43,14 +47,14 @@ class PressureFileReader(FileReader):
         pressure_file['date'] = pd.to_datetime(pressure_file['date'], format='%d.%m.%Y').dt.date
         pressure_file['time'] = pd.to_datetime(
             pressure_file['time']).dt.time  # Формат с датой и временем и работающим timedelta
-
+        pressure_file['datetime'] = [datetime.datetime.combine(date, time) for date, time in
+                                     zip(pressure_file['date'], pressure_file['time'])]
         return pressure_file
 
     @staticmethod
     def finding_breaks(pressure_data):
         breaks_dict = defaultdict(list)
-        pressure_data['datetime'] = [datetime.datetime.combine(date, time) for date, time in
-                                     zip(pressure_data['date'], pressure_data['time'])]
+
         time_difference = pressure_data['datetime'].diff()[1:]
         time_difference = time_difference[time_difference > datetime.timedelta(seconds=25)]
         for idx in time_difference.index:
@@ -74,39 +78,61 @@ class PressureFileReader(FileReader):
         return divided_pressure_data
 
     @staticmethod
-    def change_pressure_interval(data):
-        counter, summator = 0, 0
+    def cutting_neutron_data_from_pressure_data(neutron_data, pressure_data):
+        breaks_dict = PressureFileReader.finding_breaks(pressure_data)
+        if any(breaks_dict):
+            for i, _ in enumerate(breaks_dict['StartDateTime']):
+                neutron_data = neutron_data[(neutron_data['datetime'] <= breaks_dict['StartDateTime'][i]) | (
+                        neutron_data['datetime'] + datetime.timedelta(minutes=5) >= breaks_dict['EndDateTime'][i])]
+            neutron_data.reset_index(drop=True, inplace=True)
+            return neutron_data
+        return neutron_data
+
+    # @staticmethod
+    # def change_pressure_interval(data, neutron_data):
+    #     counter, summator = 0, 0
+    #     mean_pressure = []
+    #     for i in range(len(data['time'])):
+    #         counter += 1
+    #         summator += data['P_datch'][i]
+    #         if (data['time'][i].minute % 10 == 0 or data['time'][i].minute % 5 == 0) and counter > 7:
+    #             mean_pressure.append(round(summator / counter / 0.75006156, 2))
+    #             counter, summator = 0, 0
+    #     mean_pressure.append(round(summator / counter / 0.75006156, 2))
+    #     return mean_pressure
+
+    @staticmethod
+    def change_pressure_interval(pressure_data, neutron_data):
         mean_pressure = []
-        for i in range(len(data['time'])):
-            counter += 1
-            summator += data['P_datch'][i]
-            if (data['time'][i].minute % 10 == 0 or data['time'][i].minute % 5 == 0) and counter > 7:
-                mean_pressure.append(round(summator / counter / 0.75006156, 2))
-                counter, summator = 0, 0
-        mean_pressure.append(round(summator / counter / 0.75006156, 2))
+        for datetime_item in neutron_data['datetime']:
+            mean_pressure.append(round(np.mean(pressure_data[(pressure_data['datetime'] <= datetime_item) & (
+                    pressure_data['datetime'] >= datetime_item - datetime.timedelta(minutes=5))][
+                                                   'P_datch']) / 0.75006156, 2))
         return mean_pressure
 
-    def correct_pressure_data(self, pressure_data, neutron_data):
-        breaks_dict = self.finding_breaks(pressure_data)
-        if any(breaks_dict):
-            div_pressure_data = self.cutting_pressure_data(pressure_data, breaks_dict)
-            mean_pressure_list = []
-            for frame in div_pressure_data:
-                single_break = pd.DataFrame(frame)
-                mean_pressure = self.change_pressure_interval(single_break)
-                mean_pressure_list.append(mean_pressure)
-            corr_mean_result = mean_pressure_list[0]
-            blank_len = []
-            for i, _ in enumerate(breaks_dict['StartDateTime']):
-                blank_len.append(
-                    len(neutron_data.index) - len(
-                        neutron_data[(neutron_data['datetime'] < breaks_dict['StartDateTime'][i]) | (
-                                neutron_data['datetime'] > breaks_dict['EndDateTime'][i])].index))
-            for i in range(1, len(mean_pressure_list)):
-                corr_mean_result = corr_mean_result + [0] * blank_len[i - 1] + mean_pressure_list[i]
-            return corr_mean_result  # на этом этапе длина нейтронной даты и даты урагана не совпадает,
-            # так как в нейтронной дате есть еще предыдущий день и одно событие следующего
-        return self.change_pressure_interval(pressure_data)
+    # @staticmethod
+    # def correct_pressure_data(pressure_data, neutron_data):
+    #     breaks_dict = PressureFileReader.finding_breaks(pressure_data)
+    #     print(breaks_dict)
+    #     if any(breaks_dict):
+    #         div_pressure_data = PressureFileReader.cutting_pressure_data(pressure_data, breaks_dict)
+    #         mean_pressure_list = []
+    #         for frame in div_pressure_data:
+    #             single_break = pd.DataFrame(frame)
+    #             mean_pressure = PressureFileReader.change_pressure_interval(single_break, neutron_data)
+    #             mean_pressure_list.append(mean_pressure)
+    #         corr_mean_result = mean_pressure_list[0]
+    #         blank_len = []
+    #         for i, _ in enumerate(breaks_dict['StartDateTime']):
+    #             blank_len.append(
+    #                 len(neutron_data.index) - len(
+    #                     neutron_data[(neutron_data['datetime'] <= breaks_dict['StartDateTime'][i]) | (
+    #                             neutron_data['datetime'] >= breaks_dict['EndDateTime'][i])].index))
+    #         for i in range(1, len(mean_pressure_list)):
+    #             corr_mean_result = corr_mean_result + [0] * blank_len[i - 1] + mean_pressure_list[i]
+    #         return corr_mean_result  # на этом этапе длина нейтронной даты и даты урагана не совпадает,
+    #         # так как в нейтронной дате есть еще предыдущий день и одно событие следующего
+    #     return PressureFileReader.change_pressure_interval(pressure_data, neutron_data)
 
     @staticmethod
     def preparing_data(start_date, end_date, path_to_files):
@@ -120,7 +146,8 @@ class PressureFileReader(FileReader):
                 print(
                     f"File {path_to_files}/n_{single_month.month:02}-" +
                     f"{single_month.day:02}.{single_month.year - 2000:02}', does not exist")
-        return concat_n_df[(concat_n_df['date'] >= start_date) & (concat_n_df['date'] <= end_date)]
+        return concat_n_df[(concat_n_df['date'] >= start_date) & (concat_n_df['date'] <= end_date)].reset_index(
+            drop=True)
 
 
 if __name__ == "__main__":
@@ -134,4 +161,4 @@ if __name__ == "__main__":
     concat_df = PressureFileReader.preparing_data(start_date=datetime.date(2020, 1, 1),
                                                   end_date=datetime.date(2020, 1, 3),
                                                   path_to_files='D:\\Neutron')
-    print(file_reader.correct_pressure_data(concat_df, neut_concat_df))
+    print(file_reader.change_pressure_interval(concat_df, neut_concat_df))

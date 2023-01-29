@@ -5,11 +5,14 @@
 
 import datetime
 import os
+import warnings
 
+import numpy as np
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtWidgets import *
 
 from exceptions import DateError
+from file_reader.accessory_files_reader import AccessoryFileReader
 # from file_reader.db_file_reader import DbFileReader
 from file_reader.mask_file_reader import MaskFileReader
 from file_reader.neutron_file_reader import NeutronFileReader
@@ -21,8 +24,8 @@ from interfaces.takeFiles import Ui_takeFiles
 from make_excel_neutron import make_excel_neutron
 from make_report_neutron import make_report_neutron
 
-
 # from errors import *
+warnings.filterwarnings(action='ignore')
 
 
 class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -60,12 +63,12 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
         except FileNotFoundError:
             ui_file_drctry.lineEdit_2.setText("")
         try:
-            with open('path_vaisala_file.txt', 'r') as f3:
+            with open('path_vaisala_files.txt', 'r') as f3:
                 ui_file_drctry.lineEdit_3.setText(f3.read())
         except FileNotFoundError:
             ui_file_drctry.lineEdit_3.setText("")
         try:
-            with open('path_mask_file.txt', 'r') as f4:
+            with open('path_mask_files.txt', 'r') as f4:
                 ui_file_drctry.lineEdit_4.setText(f4.read())
         except FileNotFoundError:
             ui_file_drctry.lineEdit_4.setText("")
@@ -74,9 +77,9 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
         ui_file_drctry.pushButton_2.clicked.connect(
             lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'path_uragan_files'))
         ui_file_drctry.pushButton_3.clicked.connect(
-            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'path_vaisala_file'))
+            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'path_vaisala_files'))
         ui_file_drctry.pushButton_4.clicked.connect(
-            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'path_mask_file'))
+            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'path_mask_files'))
         self.widget.show()
 
     def open_report_directory(self):
@@ -85,7 +88,7 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
         ui_report_drctry.setupUi(self.widget)
         ui_report_drctry.pushButton.clicked.connect(lambda: Ui_drctryChoice.get_report_directory(ui_report_drctry))
         try:
-            with open('path_prisma_report.txt', 'r') as f:
+            with open('path_neutron_report.txt', 'r') as f:
                 ui_report_drctry.lineEdit.setText(f.read())
         except FileNotFoundError:
             ui_report_drctry.lineEdit.setText("")
@@ -111,7 +114,7 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
                 file_neutron_data = f.read()
             with open('path_uragan_files.txt', 'r') as f:
                 file_uragan_pressure = f.read()
-            with open('path_vaisala_file.txt', 'r') as f:
+            with open('path_vaisala_files.txt', 'r') as f:
                 file_vaisala_pressure = f.read()
             if ~os.path.exists(picture_path):
                 try:
@@ -152,11 +155,6 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             if start_date > end_date:
                 raise DateError(start_date, end_date)
-            proccessing_pressure = 0
-            if self.radioButton.isChecked():
-                proccessing_pressure = 993
-            elif self.radioButton_2.isChecked():
-                proccessing_pressure = 'mean_value'
             with open('path_neutron_report.txt', 'r') as f:
                 report_path = f.read()
             picture_path = report_path + '/Pics'
@@ -164,7 +162,7 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
                 file_neutron_data = f.read()
             with open('path_uragan_files.txt', 'r') as f:
                 file_uragan_pressure = f.read()
-            with open('path_mask_file.txt', 'r') as f:
+            with open('path_mask_files.txt', 'r') as f:
                 file_mask = f.read()
             if ~os.path.exists(picture_path):
                 try:
@@ -176,9 +174,17 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
             neutron_data = NeutronFileReader.preparing_data(start_date=start_date,
                                                             end_date=end_date,
                                                             path_to_files=file_neutron_data)
+            accessory_data = AccessoryFileReader(start_date=start_date, end_date=end_date,
+                                                 path_to_files=file_neutron_data)
             pressure_data = PressureFileReader.preparing_data(start_date=start_date,
                                                               end_date=end_date,
                                                               path_to_files=file_uragan_pressure)
+
+            pressure_data = NeutronFileReader.cutting_pressure_data_from_neutron_data(neutron_data=neutron_data,
+                                                                                      pressure_data=pressure_data)
+            neutron_data = PressureFileReader.cutting_neutron_data_from_pressure_data(neutron_data=neutron_data,
+                                                                                      pressure_data=pressure_data)
+
             for mask_det in range(1, 5):
                 try:
                     mask_reader = MaskFileReader(path_to_files=file_mask, detector=mask_det)
@@ -189,13 +195,33 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
                                                                        detector=mask_det)
                 except FileNotFoundError:
                     print(f"Mask data from {mask_det} detector doesn't exist")
+
+            corr_pressure_data = PressureFileReader.change_pressure_interval(pressure_data=pressure_data,
+                                                                             neutron_data=neutron_data)
+            # В corr_pressure_data присутствуют NaN их надо убрать
+            if np.isnan(corr_pressure_data).any():
+                print("Есть NaN или inf в corr_pressure")
+
+            if len(corr_pressure_data) > len(neutron_data.index):
+                print(f'{len(corr_pressure_data)=}')
+                print(f'{len(neutron_data.index)=}')
+                print('Заглушка для бага, где после корректировки данных по давлению. Они все равно плохи.')
+                corr_pressure_data = corr_pressure_data[:len(neutron_data.index)]
+
+            proccessing_pressure = self.proccessing_pressure_choice(corr_pressure_data)
+
             make_report_neutron(start_date=start_date, end_date=end_date, report_path=report_path,
-                                picture_path=picture_path, neutron_data=neutron_data, pressure_data=pressure_data,
-                                proccessing_pressure=proccessing_pressure)
+                                picture_path=picture_path, neutron_data=neutron_data, pressure_data=corr_pressure_data,
+                                proccessing_pressure=proccessing_pressure, accessory_data=accessory_data)
         except PermissionError:
             print("Закройте предыдущую версию файла!")
         except DateError:
             DateError(start_date, end_date).ui_output_error()
+
+    def proccessing_pressure_choice(self, pressure_data):
+        if self.radioButton.isChecked():
+            return 993
+        return np.mean(pressure_data)
 
 
 # запуск основного окна

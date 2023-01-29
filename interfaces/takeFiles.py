@@ -156,6 +156,6 @@ class Ui_takeFiles(object):
             self.lineEdit_3.setText(dirlist)
         else:
             self.lineEdit_4.setText(dirlist)
-        with open(filename + '.ini', 'w') as f:
+        with open(filename + '.txt', 'w') as f:
             f.write(dirlist)
         print(dirlist)

@@ -1,4 +1,6 @@
-from abs_file_reader import FileReader
+# from abs_file_reader import FileReader
+from file_reader.abs_file_reader import FileReader
+
 import pandas as pd
 import pathlib
 import datetime

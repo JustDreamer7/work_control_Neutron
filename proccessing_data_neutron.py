@@ -2,6 +2,7 @@ import datetime
 from collections import defaultdict
 
 import pandas as pd
+import numpy as np
 from scipy.optimize import curve_fit
 
 
@@ -17,8 +18,8 @@ class ProccessingNeutron:
         parameters_dict = defaultdict(list)
         for det in range(1, 5):
 
-            n_fit_params, n_fit_line = self.count_parameters(det, 'Nn')
-            noise_fit_params, noise_fit_line = self.count_parameters(det, 'N_noise')
+            n_fit_params, n_fit_line, n_corr_pressure = self.count_parameters(det, 'Nn')
+            noise_fit_params, noise_fit_line, noise_corr_pressure = self.count_parameters(det, 'N_noise')
 
             parameters_dict['N_0'].append(n_fit_params[1])
             parameters_dict['N_0_noise'].append(noise_fit_params[1])
@@ -32,12 +33,15 @@ class ProccessingNeutron:
             parameters_dict['fit_line_noise'].append(noise_fit_line)
             parameters_dict['fit_line'].append(n_fit_line)
 
+            parameters_dict['corr_pressure_n'].append(n_corr_pressure)
+            parameters_dict['corr_pressure_noise'].append(noise_corr_pressure)
+
             parameters_dict['correction_for_n'].append([(x - self.default_pressure) * n_fit_params[0] if x != 0 else 0
                                                         for x in self.pressure_data])
             parameters_dict['correction_for_noise'].append([(x - self.default_pressure) * noise_fit_params[0]
                                                             if x != 0 else 0 for x in self.pressure_data])
             for single_date in pd.date_range(start_date, end_date):
-                worktime_dict['Date'].append(single_date)
+
                 single_n_data = self.n_data[self.n_data['date'] == single_date].reset_index(drop=True)
 
                 if len(single_n_data) == 0:
@@ -46,6 +50,7 @@ class ProccessingNeutron:
 
                 worktime_dict[f'Worktime_{det}'].append(self.count_worktime(single_n_data, det))
 
+        worktime_dict['Date'].extend(pd.date_range(start_date, end_date))
         worktime_frame = pd.DataFrame(worktime_dict)
         break_frame = pd.DataFrame(break_dict)
 
@@ -85,17 +90,20 @@ class ProccessingNeutron:
         return breaks_dict
 
     def count_parameters(self, det, type_of_impulse):
-        corr_pressure = [self.pressure_data[idx] for idx in
+        corr_pressure = [self.pressure_data[idx] - self.default_pressure for idx in
                          self.n_data[self.n_data[type_of_impulse + f'{det}'] != 0].index]
 
         def linear(x, a, b):
             return a * x + b
 
-        fit_params, param_cov = curve_fit(linear, [x - self.default_pressure for x in corr_pressure],
-                                          self.n_data[self.n_data[type_of_impulse + f'{det}'] != 0][
-                                              type_of_impulse + f'{det}'])
-        fit_line = [y * fit_params[0] + fit_params[1] for y in [x - self.default_pressure for x in corr_pressure]]
-        return fit_params, fit_line
+        xdata = corr_pressure
+
+        xdata = np.nan_to_num(xdata)
+        ydata = self.n_data[self.n_data[type_of_impulse + f'{det}'] != 0][
+            type_of_impulse + f'{det}']
+        fit_params, param_cov = curve_fit(linear, xdata, ydata)
+        fit_line = [y * fit_params[0] + fit_params[1] for y in corr_pressure]
+        return fit_params, fit_line, corr_pressure
 
 
 if __name__ == "__main__":

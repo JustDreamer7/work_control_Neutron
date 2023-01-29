@@ -39,13 +39,9 @@ class MaskFileReader:
 
     @staticmethod
     def correct_neutron_data(neutron_data, mask_without_periods, period_mask, detector):
-        for item in range(len(mask_without_periods.index)):
-            neutron_data.loc[neutron_data[(
-                neutron_data['datetime'].isin(
-                    [mask_without_periods['start_datetime'][item]]))].index, f'Nn{detector}'] = 0
-            neutron_data.loc[neutron_data[(
-                neutron_data['datetime'].isin(
-                    [mask_without_periods['start_datetime'][item]]))].index, f'N_noise{detector}'] = 0
+        for item in mask_without_periods['start_datetime']:
+            neutron_data.loc[neutron_data[(neutron_data['datetime'].isin([item]))].index, f'Nn{detector}'] = 0
+            neutron_data.loc[neutron_data[(neutron_data['datetime'].isin([item]))].index, f'N_noise{detector}'] = 0
 
         for item in range(len(period_mask.index)):
             neutron_data[f'Nn{detector}'] = neutron_data[f'Nn{detector}'].where(
