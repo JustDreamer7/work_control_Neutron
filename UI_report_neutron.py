@@ -1,8 +1,3 @@
-# pyuic6 messenger.ui -o clientui.py
-
-# В этом py файле описана логика взаимодействия с интерфейсом
-
-
 import datetime
 import os
 import warnings
@@ -96,11 +91,6 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def return_files_on_click(self):
         # описание работы кнопки получения данных для составления маски
-        proccessing_pressure = 0
-        if self.radioButton.isChecked():
-            proccessing_pressure = 993
-        elif self.radioButton_2.isChecked():
-            proccessing_pressure = 'mean_value'
         start_date = self.dateEdit.date().toPyDate()
         end_date = self.dateEdit_2.date().toPyDate()
         try:
@@ -116,14 +106,14 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
                 file_uragan_pressure = f.read()
             with open('path_vaisala_files.txt', 'r') as f:
                 file_vaisala_pressure = f.read()
-            if ~os.path.exists(picture_path):
+            if not os.path.exists(picture_path):
                 try:
                     os.mkdir(picture_path)
                 except OSError:
                     print(f"Создать директорию {picture_path} не удалось")
                 else:
                     print(f"Успешно создана директория {picture_path}")
-            if ~os.path.exists(files_path):
+            if not os.path.exists(files_path):
                 try:
                     os.mkdir(files_path)
                 except OSError:
@@ -139,8 +129,27 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
             vaisala_data = VaisalaFileReader.preparing_data(start_date=start_date,
                                                             end_date=end_date,
                                                             path_to_files=file_vaisala_pressure)
+            pressure_data = NeutronFileReader.cutting_pressure_data_from_neutron_data(neutron_data=neutron_data,
+                                                                                      pressure_data=pressure_data)
+            neutron_data = PressureFileReader.cutting_neutron_data_from_pressure_data(neutron_data=neutron_data,
+                                                                                      pressure_data=pressure_data)
+
+            corr_pressure_data = PressureFileReader.change_pressure_interval(pressure_data=pressure_data,
+                                                                             neutron_data=neutron_data)
+            # В corr_pressure_data присутствуют NaN их надо убрать
+            if np.isnan(corr_pressure_data).any():
+                print("Есть NaN или inf в corr_pressure")
+
+            if len(corr_pressure_data) > len(neutron_data.index):
+                print(f'{len(corr_pressure_data)=}')
+                print(f'{len(neutron_data.index)=}')
+                print('Заглушка для бага, где после корректировки данных по давлению. Они все равно плохи.')
+                corr_pressure_data = corr_pressure_data[:len(neutron_data.index)]
+
+            proccessing_pressure = self.proccessing_pressure_choice(corr_pressure_data)
+
             make_excel_neutron(start_date=start_date, end_date=end_date, files_path=files_path,
-                               picture_path=picture_path, neutron_data=neutron_data, pressure_data=pressure_data,
+                               picture_path=picture_path, neutron_data=neutron_data, pressure_data=corr_pressure_data,
                                vaisala_data=vaisala_data, proccessing_pressure=proccessing_pressure)
 
         except PermissionError:
@@ -164,7 +173,7 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
                 file_uragan_pressure = f.read()
             with open('path_mask_files.txt', 'r') as f:
                 file_mask = f.read()
-            if ~os.path.exists(picture_path):
+            if not os.path.exists(picture_path):
                 try:
                     os.mkdir(picture_path)
                 except OSError:
@@ -224,23 +233,8 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
         return np.mean(pressure_data)
 
 
-# запуск основного окна
 app = QtWidgets.QApplication([])
 window = Passport()
 window.show()
 app.exec()
 
-# Не удаляй, код должен остаться, если сломается takeFiles.py
-
-#
-#     def getFileDirectory(self, filename):
-#         dirlist = QFileDialog.getExistingDirectory()
-#         if filename == 'path1files':
-#             self.lineEdit.setText(dirlist)
-#         elif filename == 'path2files':
-#             self.lineEdit_2.setText(dirlist)
-#         else:
-#             self.lineEdit_3.setText(dirlist)
-#         with open(filename + '.ini', 'w') as f:
-#             f.write(dirlist)
-#         print(dirlist)
