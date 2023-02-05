@@ -18,8 +18,9 @@ from interfaces.interface import Ui_MainWindow
 from interfaces.takeFiles import Ui_takeFiles
 from make_excel_neutron import make_excel_neutron
 from make_report_neutron import make_report_neutron
+from dotenv import load_dotenv
 
-# from errors import *
+load_dotenv()
 warnings.filterwarnings(action='ignore')
 
 
@@ -46,80 +47,49 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
     def open_file_directory(self):
         ui_file_drctry = Ui_takeFiles()
         ui_file_drctry.setupUi(self.widget)
-        # запись в 2 файла -> 2 кластера, чтобы данные о папке сохранялись в отрыве от работы программы
-        try:
-            with open('path_neutron_files.txt', 'r') as f:
-                ui_file_drctry.lineEdit.setText(f.read())
-        except FileNotFoundError:
-            ui_file_drctry.lineEdit.setText("")
-        try:
-            with open('path_uragan_files.txt', 'r') as f2:
-                ui_file_drctry.lineEdit_2.setText(f2.read())
-        except FileNotFoundError:
-            ui_file_drctry.lineEdit_2.setText("")
-        try:
-            with open('path_vaisala_files.txt', 'r') as f3:
-                ui_file_drctry.lineEdit_3.setText(f3.read())
-        except FileNotFoundError:
-            ui_file_drctry.lineEdit_3.setText("")
-        try:
-            with open('path_mask_files.txt', 'r') as f4:
-                ui_file_drctry.lineEdit_4.setText(f4.read())
-        except FileNotFoundError:
-            ui_file_drctry.lineEdit_4.setText("")
+
+        ui_file_drctry.lineEdit.setText(os.environ.get("PATH_NEUTRON_FILES"))
+        ui_file_drctry.lineEdit_2.setText(os.environ.get("PATH_URAGAN_FILES"))
+        ui_file_drctry.lineEdit_3.setText(os.environ.get("PATH_VAISALA_FILES"))
+        ui_file_drctry.lineEdit_4.setText(os.environ.get("PATH_MASK_FILES"))
+
         ui_file_drctry.pushButton.clicked.connect(
-            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'path_neutron_files'))
+            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'PATH_NEUTRON_FILES'))
         ui_file_drctry.pushButton_2.clicked.connect(
-            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'path_uragan_files'))
+            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'PATH_URAGAN_FILES'))
         ui_file_drctry.pushButton_3.clicked.connect(
-            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'path_vaisala_files'))
+            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'PATH_VAISALA_FILES'))
         ui_file_drctry.pushButton_4.clicked.connect(
-            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'path_mask_files'))
+            lambda: Ui_takeFiles.getFileDirectory(ui_file_drctry, 'PATH_MASK_FILES'))
+
         self.widget.show()
 
     def open_report_directory(self):
         # Возможно нужно переопределять self.widget, чтобы не лагало отображение
         ui_report_drctry = Ui_drctryChoice()
         ui_report_drctry.setupUi(self.widget)
+        ui_report_drctry.lineEdit.setText(os.environ.get("PATH_NEUTRON_REPORT"))
         ui_report_drctry.pushButton.clicked.connect(lambda: Ui_drctryChoice.get_report_directory(ui_report_drctry))
-        try:
-            with open('path_neutron_report.txt', 'r') as f:
-                ui_report_drctry.lineEdit.setText(f.read())
-        except FileNotFoundError:
-            ui_report_drctry.lineEdit.setText("")
         self.widget.show()
 
     def return_files_on_click(self):
         # описание работы кнопки получения данных для составления маски
         start_date = self.dateEdit.date().toPyDate()
         end_date = self.dateEdit_2.date().toPyDate()
+        load_dotenv()
         try:
             if start_date > end_date:
                 raise DateError(start_date, end_date)
-            with open('path_neutron_report.txt', 'r') as f:
-                report_path = f.read()
+            report_path = os.environ.get("PATH_NEUTRON_REPORT")
+            file_neutron_data = os.environ.get("PATH_NEUTRON_FILES")
+            file_uragan_pressure = os.environ.get("PATH_URAGAN_FILES")
+            file_vaisala_pressure = os.environ.get("PATH_VAISALA_FILES")
+
             picture_path = report_path + '/without_mask_Pics'
             files_path = report_path + '/without_mask_N_files'
-            with open('path_neutron_files.txt', 'r') as f:
-                file_neutron_data = f.read()
-            with open('path_uragan_files.txt', 'r') as f:
-                file_uragan_pressure = f.read()
-            with open('path_vaisala_files.txt', 'r') as f:
-                file_vaisala_pressure = f.read()
-            if not os.path.exists(picture_path):
-                try:
-                    os.mkdir(picture_path)
-                except OSError:
-                    print(f"Создать директорию {picture_path} не удалось")
-                else:
-                    print(f"Успешно создана директория {picture_path}")
-            if not os.path.exists(files_path):
-                try:
-                    os.mkdir(files_path)
-                except OSError:
-                    print(f"Создать директорию {files_path} не удалось")
-                else:
-                    print(f"Успешно создана директория {files_path}")
+            self.create_direct_checker(picture_path)
+            self.create_direct_checker(files_path)
+            self.create_direct_checker(files_path+f'/{start_date.year}')
             neutron_data = NeutronFileReader.preparing_data(start_date=start_date,
                                                             end_date=end_date,
                                                             path_to_files=file_neutron_data)
@@ -161,25 +131,18 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
         # описание работы кнопки получения паспорта
         start_date = self.dateEdit.date().toPyDate()
         end_date = self.dateEdit_2.date().toPyDate()
+        load_dotenv()
         try:
             if start_date > end_date:
                 raise DateError(start_date, end_date)
-            with open('path_neutron_report.txt', 'r') as f:
-                report_path = f.read()
+            report_path = os.environ.get("PATH_NEUTRON_REPORT")
+            print(report_path)
+            file_neutron_data = os.environ.get("PATH_NEUTRON_FILES")
+            file_uragan_pressure = os.environ.get("PATH_URAGAN_FILES")
+            file_mask = os.environ.get("PATH_MASK_FILES")
+
             picture_path = report_path + '/Pics'
-            with open('path_neutron_files.txt', 'r') as f:
-                file_neutron_data = f.read()
-            with open('path_uragan_files.txt', 'r') as f:
-                file_uragan_pressure = f.read()
-            with open('path_mask_files.txt', 'r') as f:
-                file_mask = f.read()
-            if not os.path.exists(picture_path):
-                try:
-                    os.mkdir(picture_path)
-                except OSError:
-                    print(f"Создать директорию {picture_path} не удалось")
-                else:
-                    print(f"Успешно создана директория {picture_path}")
+            self.create_direct_checker(picture_path)
             neutron_data = NeutronFileReader.preparing_data(start_date=start_date,
                                                             end_date=end_date,
                                                             path_to_files=file_neutron_data)
@@ -232,9 +195,17 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
             return 993
         return np.mean(pressure_data)
 
+    @staticmethod
+    def create_direct_checker(direct_path):
+        try:
+            os.mkdir(direct_path)
+        except OSError:
+            print(f"Создать директорию {direct_path} не удалось")
+        else:
+            print(f"Успешно создана директория {direct_path}")
+
 
 app = QtWidgets.QApplication([])
 window = Passport()
 window.show()
 app.exec()
-

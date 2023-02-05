@@ -9,5 +9,6 @@ Module for creating information about the operation of the NEUTRON
    - create new directory
    - clone the repository to new directory 
    - create python virtualenv
-   - install all site-packages - pip install -r requirements.txt
-6. **In project used:** Python with pandas, numpy, pyqt6 and etc.
+   - install all site-packages - pip install -r requirements.txt 
+   - change name of .env_example to .env
+5. **In project used:** Python with pandas, numpy, pyqt6 and etc.

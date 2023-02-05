@@ -139,13 +139,11 @@ class PressureFileReader(FileReader):
         """Статический метод подготовки данных из n-файлов за определенный период для определенного кластера"""
         concat_n_df = pd.DataFrame()
         for single_month in pd.period_range(start=start_date, end=end_date, freq='M'):
+            filereader = PressureFileReader(single_month=single_month, path_to_files=path_to_files)
             try:
-                filereader = PressureFileReader(single_month=single_month, path_to_files=path_to_files)
                 concat_n_df = pd.concat([concat_n_df, filereader.reading_file()], ignore_index=True)
             except FileNotFoundError:
-                print(
-                    f"File {path_to_files}/n_{single_month.month:02}-" +
-                    f"{single_month.day:02}.{single_month.year - 2000:02}', does not exist")
+                print(f"File {filereader.path_to_files}/{filereader.file_name}, does not exist")
         return concat_n_df[(concat_n_df['date'] >= start_date) & (concat_n_df['date'] <= end_date)].reset_index(
             drop=True)
 

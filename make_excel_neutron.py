@@ -13,16 +13,16 @@ def csv_save_neutron_files(neutron_data, files_path, start_date, end_date, ascen
     for det in range(1, 5):
         neutron_file = neutron_data[['datetime', f'Nn{det}']].sort_values(f'Nn{det}', ascending=ascending)
         neutron_file.to_csv(
-            pathlib.PurePath(files_path, start_date.year, f'Nn{det} - {"asc" if ascending else "desc"} '
-                                                          f'- {start_date.month:02}-{start_date.day:02}-'
-                                                          f'{end_date.month:02}-{end_date.day:02}.csv'),
+            pathlib.PurePath(files_path, str(start_date.year), f'Nn{det} - {"asc" if ascending else "desc"} '
+                                                               f'- {start_date.month:02}-{start_date.day:02}-'
+                                                               f'{end_date.month:02}-{end_date.day:02}.csv'),
             sep=';', index=False)
 
         noise_file = neutron_data[['datetime', f'N_noise{det}']].sort_values(f'N_noise{det}', ascending=ascending)
         noise_file.to_csv(
-            pathlib.PurePath(files_path, start_date.year, f'N_noise{det} - {"asc" if ascending else "desc"} '
-                                                          f'- {start_date.month:02}-{start_date.day:02}-'
-                                                          f'{end_date.month:02}-{end_date.day:02}.csv'),
+            pathlib.PurePath(files_path, str(start_date.year), f'N_noise{det} - {"asc" if ascending else "desc"} '
+                                                               f'- {start_date.month:02}-{start_date.day:02}-'
+                                                               f'{end_date.month:02}-{end_date.day:02}.csv'),
             sep=';', index=False)
 
 
@@ -36,6 +36,10 @@ def dcorr_file(neutron_data, pressure_data, vaisala_data, files_path, start_date
     dcorr_data.to_csv(pathlib.PurePath(files_path, start_date.year, f'DCorr_{start_date.month:02}-{start_date.day:02}-'
                                                                     f'{end_date.month:02}-{end_date.day:02}.csv'),
                       sep=';', index=False)
+    if len(dcorr_data.index) == len(vaisala_data.index):
+        print('test')
+    print(f'{len(dcorr_data.index)=}')
+    print(f'{len(vaisala_data.index)=}')
 
 
 def ndata_temp_all_file(neutron_data, pressure_data, vaisala_data, files_path, start_date, end_date):
@@ -70,24 +74,26 @@ def make_excel_neutron(start_date, end_date, files_path, picture_path, neutron_d
     worktime_frame, break_frame, parameters_dict = processing_inst.period_processing_for_report(
         start_date=start_date, end_date=end_date)
 
-    n_pressure_graph = graphs.pressure_graph(corr_pressure_data=parameters_dict['corr_pressure_n'],
-                                             neutron_data=neutron_data,
-                                             fit_line=parameters_dict['fit_line'],
-                                             type_of_impulse='Nn')
-    noise_pressure_graph = graphs.pressure_graph(corr_pressure_data=parameters_dict['corr_pressure_noise'],
-                                                 neutron_data=neutron_data,
-                                                 fit_line=parameters_dict['fit_line_noise'],
-                                                 type_of_impulse='N_noise')
-    neutron_graph = graphs.neutron_graph(neutron_data=neutron_data,
-                                         corr_for_neutron_data=parameters_dict['correction_for_n'],
-                                         pressure_data=pressure_data,
-                                         type_of_impulse='Nn')
-    noise__graph = graphs.neutron_graph(neutron_data=neutron_data,
-                                        corr_for_neutron_data=parameters_dict['correction_for_noise'],
-                                        pressure_data=pressure_data,
-                                        type_of_impulse='N_noise')
+    graphs.pressure_graph(corr_pressure_data=parameters_dict['corr_pressure_n'],
+                          neutron_data=neutron_data,
+                          fit_line=parameters_dict['fit_line'],
+                          type_of_impulse='Nn')
+    graphs.pressure_graph(corr_pressure_data=parameters_dict['corr_pressure_noise'],
+                          neutron_data=neutron_data,
+                          fit_line=parameters_dict['fit_line_noise'],
+                          type_of_impulse='N_noise')
+    graphs.neutron_graph(neutron_data=neutron_data,
+                         corr_for_neutron_data=parameters_dict['correction_for_n'],
+                         pressure_data=pressure_data,
+                         type_of_impulse='Nn')
+    graphs.neutron_graph(neutron_data=neutron_data,
+                         corr_for_neutron_data=parameters_dict['correction_for_noise'],
+                         pressure_data=pressure_data,
+                         type_of_impulse='N_noise')
     csv_save_neutron_files(neutron_data=neutron_data, files_path=files_path, start_date=start_date, end_date=end_date,
                            ascending=True)
     csv_save_neutron_files(neutron_data=neutron_data, files_path=files_path, start_date=start_date, end_date=end_date,
                            ascending=False)
+    dcorr_file(neutron_data=neutron_data, pressure_data=pressure_data, vaisala_data=vaisala_data, files_path=files_path,
+               start_date=start_date, end_date=end_date)
     print(time.time() - t1)

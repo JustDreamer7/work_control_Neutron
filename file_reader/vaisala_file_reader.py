@@ -63,14 +63,13 @@ class VaisalaFileReader(FileReader):
         for single_date in pd.date_range(start_date - datetime.timedelta(days=1), end_date):
             # минус один день в timedelta, так как начальные события первого дня могут остаться в n-файле предыдущего
             # дня
+            filereader = VaisalaFileReader(single_date=single_date, path_to_files=path_to_files)
             try:
-                filereader = VaisalaFileReader(single_date=single_date, path_to_files=path_to_files)
                 concat_n_df = pd.concat([concat_n_df, filereader.reading_file()], ignore_index=True)
             except FileNotFoundError:
-                print(
-                    f"File {path_to_files}/n_{single_date.month:02}-" +
-                    f"{single_date.day:02}.{single_date.year - 2000:02}', does not exist")
-        return concat_n_df
+                print(f"File {filereader.path_to_files}/{filereader.file_name}, does not exist")
+        return concat_n_df[(concat_n_df['date'] >= start_date) & (concat_n_df['date'] <= end_date)].reset_index(
+            drop=True)
 
 
 if __name__ == "__main__":
