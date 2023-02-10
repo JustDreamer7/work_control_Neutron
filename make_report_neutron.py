@@ -1,5 +1,4 @@
 import time
-import warnings
 
 import pandas as pd
 from docx import Document
@@ -14,8 +13,6 @@ from proccessing_data_neutron import ProccessingNeutron
 def make_report_neutron(start_date, end_date, report_path, picture_path, neutron_data, pressure_data,
                         proccessing_pressure, accessory_data):
     t1 = time.time()
-
-    warnings.filterwarnings(action='ignore')
 
     days_amount = len(pd.date_range(start_date, end_date))
 

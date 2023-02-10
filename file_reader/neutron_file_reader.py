@@ -15,7 +15,7 @@ class NeutronFileReader(FileReader):
         self._file_name = f'4dt{self.single_date.month:02}-' + \
                           f'{self.single_date.day:02}.{self.single_date.year - 2000:02}'
         self._columns = ['date', 'time'] + [f'Nn{i}' for i in range(1, 5)] + [f'N_noise{i}' for i in range(1, 5)] + [
-            f'const_{i}' for i in range(1, 4)]
+            'P_mm-rt_st_N', 'TN', 'AH']
 
     @property
     def path_to_files(self):
@@ -89,7 +89,7 @@ class NeutronFileReader(FileReader):
         if any(breaks_dict):
             for i, _ in enumerate(breaks_dict['StartDateTime']):
                 pressure_data = pressure_data[(pressure_data['datetime'] <= breaks_dict['StartDateTime'][i]) | (
-                        pressure_data['datetime'] >= breaks_dict['EndDateTime'][i] -datetime.timedelta(minutes=5))]
+                        pressure_data['datetime'] >= breaks_dict['EndDateTime'][i] - datetime.timedelta(minutes=5))]
             pressure_data.reset_index(drop=True, inplace=True)
             return pressure_data
         return pressure_data
@@ -133,7 +133,7 @@ class NeutronFileReader(FileReader):
             try:
                 concat_n_df = pd.concat([concat_n_df, filereader.reading_file()], ignore_index=True)
             except FileNotFoundError:
-                print(f"File {filereader.path_to_files}/{filereader.file_name}, does not exist")
+                print(f"File {filereader.making_file_path(file_directory='dt')}, does not exist")
         return concat_n_df[(concat_n_df['date'] >= start_date) & (concat_n_df['date'] <= end_date)].reset_index(
             drop=True)  # чтобы выровнять списки и фреймы по длине, так как в neutron_data есть один день
         # из до заданного периода и одно событие после заданного периода

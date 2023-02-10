@@ -1,9 +1,10 @@
 # from abs_file_reader import FileReader
-from file_reader.abs_file_reader import FileReader
+import datetime
+import pathlib
 
 import pandas as pd
-import pathlib
-import datetime
+
+from file_reader.abs_file_reader import FileReader
 
 
 class VaisalaFileReader(FileReader):
@@ -31,8 +32,8 @@ class VaisalaFileReader(FileReader):
         return file_path
 
     def reading_file(self):
-        vaisala_file_path = self.making_file_path(file_directory=f'{self.single_date.year}\\{self.single_date.month:02}')
-        # Подумать, как настроить файл директори, чтобы от года к году перескакивало
+        vaisala_file_path = self.making_file_path(
+            file_directory=f'{self.single_date.year}\\{self.single_date.month:02}')
         vaisala_file = pd.read_csv(vaisala_file_path,
                                    sep=r'\t', skipinitialspace=True, index_col=False,
                                    engine='python')
@@ -40,6 +41,7 @@ class VaisalaFileReader(FileReader):
         vaisala_file['time'] = [item.split(" ")[1] for item in vaisala_file['TIME']]
         del vaisala_file['TIME']
         vaisala_file = vaisala_file[['date', 'time', 'TA', 'RH', 'PR']]
+        vaisala_file['date'] = pd.to_datetime(vaisala_file['date']).dt.date
         return self.check_time_index(vaisala_file)
 
     @staticmethod
@@ -54,6 +56,8 @@ class VaisalaFileReader(FileReader):
             file_day_after['date'] = [file_day_after['date'].item() + datetime.timedelta(
                 days=1)] * len(file_day_after.index)
             return pd.concat([file_today, file_day_after], ignore_index=True)
+        file_data['datetime'] = [datetime.datetime.combine(date, time) for date, time in
+                                 zip(file_data['date'], file_data['time'])]
         return file_data
 
     @staticmethod
@@ -67,7 +71,8 @@ class VaisalaFileReader(FileReader):
             try:
                 concat_n_df = pd.concat([concat_n_df, filereader.reading_file()], ignore_index=True)
             except FileNotFoundError:
-                print(f"File {filereader.path_to_files}/{filereader.file_name}, does not exist")
+                print(
+                    f"File {filereader.making_file_path(file_directory=f'{filereader.single_date.year}/{filereader.single_date.month:02}')}, does not exist")
         return concat_n_df[(concat_n_df['date'] >= start_date) & (concat_n_df['date'] <= end_date)].reset_index(
             drop=True)
 
@@ -75,8 +80,6 @@ class VaisalaFileReader(FileReader):
 if __name__ == "__main__":
     file_reader = VaisalaFileReader(path_to_files='D:\\Neutron\\Vaisala\\Station02',
                                     single_date=datetime.date(2022, 1, 3))
-    # print(file_reader.path_to_files)
-    # print(file_reader.reading_file())
     print(issubclass(VaisalaFileReader, FileReader))
     concat_df = VaisalaFileReader.preparing_data(start_date=datetime.date(2022, 1, 1),
                                                  end_date=datetime.date(2022, 1, 3),

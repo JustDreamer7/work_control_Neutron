@@ -1,6 +1,5 @@
 import os.path
 import pathlib
-import random
 
 import pandas as pd
 
@@ -9,7 +8,7 @@ class AccessoryFileReader:
     def __init__(self, path_to_files, start_date, end_date):
         self._path_to_files = path_to_files
         self.date_range = pd.date_range(start_date, end_date).tolist()
-        self.single_date = random.choice(pd.date_range(start_date, end_date))
+        self.single_date = self.date_range[-1]
         self.columns = [f'det_{i}' for i in range(1, 5)]
         self.n_amp_columns = self.columns + [f'noise_{i}' for i in range(1, 5)]
 
@@ -17,7 +16,7 @@ class AccessoryFileReader:
         file_path = pathlib.PurePath(self._path_to_files, file_directory, file_name)
         while not os.path.isfile(file_path):
             self.date_range.remove(self.single_date)
-            self.single_date = random.choice(self.date_range)
+            self.single_date = self.date_range[-1]
             print(f"File {file_path} doesn't exist")
             file_path = pathlib.PurePath(self._path_to_files, file_directory, file_name)
         return file_path

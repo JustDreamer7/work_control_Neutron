@@ -143,7 +143,7 @@ class PressureFileReader(FileReader):
             try:
                 concat_n_df = pd.concat([concat_n_df, filereader.reading_file()], ignore_index=True)
             except FileNotFoundError:
-                print(f"File {filereader.path_to_files}/{filereader.file_name}, does not exist")
+                print(f"File {filereader.making_file_path(file_directory='pressure')}, does not exist")
         return concat_n_df[(concat_n_df['date'] >= start_date) & (concat_n_df['date'] <= end_date)].reset_index(
             drop=True)
 
