@@ -28,7 +28,7 @@ def csv_save_neutron_files(neutron_data, files_path, start_date, end_date, ascen
 
 def corr_files(neutron_data, pressure_data, vaisala_data, files_path, start_date, end_date):
     data = neutron_data.copy()
-    data['P_mm-bar_N'] = neutron_data['P_mm-rt_st_N'] / 0.75006156
+    data['P_mm-bar_N'] = neutron_data['P_mm_rt_st_N'] / 0.75006156
     data['P_mm-bar'] = pressure_data
     data['P_mm-rt_st'] = [round(x * 0.75006156, 2) for x in pressure_data]
     data['TA_vaisala'] = ['/'] * len(data.index)
@@ -48,10 +48,10 @@ def corr_files(neutron_data, pressure_data, vaisala_data, files_path, start_date
                 break
 
     dcorr_data = data[['datetime', ] + [f'Nn{i}' for i in range(1, 5)] + [f'N_noise{i}' for i in range(1, 5)] +
-                      ['P_mm-rt_st_N', 'TN', 'AH', 'P_mm-bar', 'P_mm-bar_N', 'TA_vaisala', 'RH_vaisala',
+                      ['P_mm_rt_st_N', 'TN', 'AH', 'P_mm-bar', 'P_mm-bar_N', 'TA_vaisala', 'RH_vaisala',
                        'PR_vaisala']]
     dcorr_data.columns = ['datetime'] + [f'CotR{i}' for i in range(1, 5)] + [f'CotRFC{i}' for i in range(1, 5)] + [
-        'P_mm-rt_st_N', 'TN', 'AH', 'P_mm-bar', 'P_mm-bar_N', 'TA_vaisala', 'RH_vaisala', 'PR_vaisala']
+        'P_mm_rt_st_N', 'TN', 'AH', 'P_mm-bar', 'P_mm-bar_N', 'TA_vaisala', 'RH_vaisala', 'PR_vaisala']
     dcorr_data.to_csv(
         pathlib.PurePath(files_path, str(start_date.year), f'DCorr_{start_date.month:02}-{start_date.day:02}-'
                                                            f'{end_date.month:02}-{end_date.day:02}.csv'),
