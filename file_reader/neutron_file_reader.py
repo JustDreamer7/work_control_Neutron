@@ -15,7 +15,7 @@ class NeutronFileReader(FileReader):
         self._file_name = f'4dt{self.single_date.month:02}-' + \
                           f'{self.single_date.day:02}.{self.single_date.year - 2000:02}'
         self._columns = ['date', 'time'] + [f'Nn{i}' for i in range(1, 5)] + [f'N_noise{i}' for i in range(1, 5)] + [
-            'P_mm-rt_st_N', 'TN', 'AH']
+            'P_mm_rt_st_N', 'TN', 'AH']
 
     @property
     def path_to_files(self):
