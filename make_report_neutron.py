@@ -44,16 +44,11 @@ def make_report_neutron(start_date, end_date, report_path, picture_path, neutron
                                         pressure_data=pressure_data,
                                         type_of_impulse='N_noise')
     r_distribution_data = accessory_data.r_file_reader()
-    r_dist_graph = graphs.r_distribution(r_dist_frame=r_distribution_data,
-                                         single_date=accessory_data.single_date)
 
     front_time_data = accessory_data.r_file_reader()
-    front_time_dist_graph = graphs.front_time_dist(front_time_frame=front_time_data,
-                                                   single_date=accessory_data.single_date)
 
     n_amp_data = accessory_data.n_amp_data_reader()
-    n_amp_dist_graph = graphs.n_amp_dist(n_amp_frame=n_amp_data,
-                                         single_date=accessory_data.single_date)
+
     print(f'{worktime_frame}')
     print(f'{break_frame}')
     print(f'{parameters_dict["N_0"]}')
@@ -209,35 +204,52 @@ def make_report_neutron(start_date, end_date, report_path, picture_path, neutron
 
     word_addition.page_breaker(doc=doc)
 
-    graphic_header = doc.add_paragraph('Временные распределения сигналов.',
-                                       style='Head-graphic')
-    graphic_header.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-    word_addition.adding_graphic(doc,
-                                 title='Рис. 5 - Временные распределения сигналов.',
-                                 width=7.5,
-                                 height=3.9,
-                                 picture_path=str(n_amp_dist_graph))
+    try:
+        n_amp_dist_graph = graphs.n_amp_dist(n_amp_frame=n_amp_data,
+                                             single_date=accessory_data.single_date)
+        graphic_header = doc.add_paragraph('Временные распределения сигналов.',
+                                           style='Head-graphic')
+        graphic_header.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-    graphic_header = doc.add_paragraph('Амплитудные распределения сигналов.',
-                                       style='Head-graphic')
-    graphic_header.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-    word_addition.adding_graphic(doc,
-                                 title='Рис. 6 - Амплитудные распределения сигналов.',
-                                 width=7.5,
-                                 height=3.9,
-                                 picture_path=str(front_time_dist_graph))
+        word_addition.adding_graphic(doc,
+                                     title='Рис. 5 - Временные распределения сигналов.',
+                                     width=7.5,
+                                     height=3.9,
+                                     picture_path=str(n_amp_dist_graph))
+    except AttributeError:
+        print(f"sp-файлов в период за {start_date}/{end_date} не существует")
 
-    graphic_header = doc.add_paragraph('Распределения сигналов по параметру R (Af/Amax).',
-                                       style='Head-graphic')
-    graphic_header.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-    word_addition.adding_graphic(doc,
-                                 title='Рис. 7 - Распределения сигналов по параметру R (Af/Amax).',
-                                 width=7.5,
-                                 height=3.9,
-                                 picture_path=str(r_dist_graph))
+    try:
+        front_time_dist_graph = graphs.front_time_dist(front_time_frame=front_time_data,
+                                                       single_date=accessory_data.single_date)
+        graphic_header = doc.add_paragraph('Амплитудные распределения сигналов.',
+                                           style='Head-graphic')
+        graphic_header.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        word_addition.adding_graphic(doc,
+                                     title='Рис. 6 - Амплитудные распределения сигналов.',
+                                     width=7.5,
+                                     height=3.9,
+                                     picture_path=str(front_time_dist_graph))
+    except AttributeError:
+        print(f"Tf-файлов в период за {start_date}/{end_date} не существует")
+
+    try:
+        r_dist_graph = graphs.r_distribution(r_dist_frame=r_distribution_data,
+                                             single_date=accessory_data.single_date)
+        graphic_header = doc.add_paragraph('Распределения сигналов по параметру R (Af/Amax).',
+                                           style='Head-graphic')
+        graphic_header.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        word_addition.adding_graphic(doc,
+                                     title='Рис. 7 - Распределения сигналов по параметру R (Af/Amax).',
+                                     width=7.5,
+                                     height=3.9,
+                                     picture_path=str(r_dist_graph))
+    except AttributeError:
+        print(f"R-файлов в период за {start_date}/{end_date} не существует")
 
     word_addition.add_page_number(doc.sections[0].footer.paragraphs[0])
     doc.save(
-        f'{report_path}\\{start_date.day:02}.{start_date.month:02}.{start_date.year}-{end_date.day:02}.{end_date.month:02}.{end_date.year}.docx')
+        f'{report_path}\\{start_date.day:02}.{start_date.month:02}.{start_date.year}'
+        f'-{end_date.day:02}.{end_date.month:02}.{end_date.year}.docx')
 
     print(time.time() - t1)

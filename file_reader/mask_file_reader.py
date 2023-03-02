@@ -51,8 +51,3 @@ class MaskFileReader:
                 (neutron_data['datetime'] < period_mask['start_datetime'][item]) | (
                         neutron_data['datetime'] > period_mask['end_datetime'][item]), 0)
         return neutron_data
-
-
-if __name__ == "__main__":
-    file_reader = MaskFileReader(path_to_files='D:\\Neutron', detector=1)
-    print(file_reader.reading_file())
