@@ -3,6 +3,7 @@ import os
 import warnings
 
 import numpy as np
+import pandas.errors
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtWidgets import *
 
@@ -167,7 +168,9 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
                                                                        detector=mask_det)
                 except FileNotFoundError:
                     print(f"Mask data from {mask_det} detector doesn't exist")
-
+                except pandas.errors.ParserError as e:
+                    print(e.args)
+                    print(f'Проблемы с самим файлом, pandas не может распарсить')
             corr_pressure_data = PressureFileReader.change_pressure_interval(pressure_data=pressure_data,
                                                                              neutron_data=neutron_data)
             # В corr_pressure_data присутствуют NaN их надо убрать

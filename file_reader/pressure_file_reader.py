@@ -31,11 +31,13 @@ class PressureFileReader(FileReader):
         return self._columns
 
     def making_file_path(self, file_directory):
-        file_path = pathlib.PurePath(self.path_to_files, file_directory, self.file_name)
-        return file_path
+        if file_directory:
+            return pathlib.PurePath(self.path_to_files, file_directory, self.file_name)
+        return pathlib.PurePath(self.path_to_files, self.file_name)
+
 
     def reading_file(self):
-        pressure_file_path = self.making_file_path(file_directory='pressure')
+        pressure_file_path = self.making_file_path(file_directory='')
         pressure_file = pd.read_csv(pressure_file_path,
                                     sep=r'\s', header=None,
                                     skipinitialspace=True, index_col=False,
@@ -143,7 +145,7 @@ class PressureFileReader(FileReader):
             try:
                 concat_n_df = pd.concat([concat_n_df, filereader.reading_file()], ignore_index=True)
             except FileNotFoundError:
-                print(f"File {filereader.making_file_path(file_directory='pressure')}, does not exist")
+                print(f"File {filereader.making_file_path(file_directory='')}, does not exist")
         return concat_n_df[(concat_n_df['date'] >= start_date) & (concat_n_df['date'] <= end_date)].reset_index(
             drop=True)
 
