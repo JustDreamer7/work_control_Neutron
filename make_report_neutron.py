@@ -83,25 +83,32 @@ def make_report_neutron(start_date, end_date, report_path, picture_path, neutron
     word_addition.make_table_bold(worktime_table, cols=4, rows=5)
     doc.add_paragraph()
 
-    fail_str_begin, fail_str_end, lost_minutes, breaks = word_addition.time_breaks_counter(brake_frame=break_frame)
+    fail_str_begin, fail_str_end, lost_minutes = word_addition.time_breaks_counter(break_frame=break_frame)
 
-    brake_table_title = doc.add_paragraph('Таблица 2: Сводная таблица остановок установки Нейтрон.', style='PItalic')
-    brake_table_title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    break_table_title = doc.add_paragraph('Таблица 2: Сводная таблица остановок установки Нейтрон.', style='PItalic')
+    break_table_title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-    brake_table = doc.add_table(len(fail_str_begin) + 2, 5, doc.styles['Table Grid'])
-    brake_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    brake_table.cell(0, 0).text = '№'
-    brake_table.cell(0, 0).merge(brake_table.cell(1, 0))
-    brake_table.cell(0, 1).text = 'Время простоя'
-    brake_table.cell(1, 1).text = 'c'
-    brake_table.cell(1, 2).text = 'по'
-    brake_table.cell(0, 1).merge(brake_table.cell(0, 2))
-    brake_table.cell(0, 3).text = 'Кол-во потерянных минут (период)'
-    brake_table.cell(0, 3).merge(brake_table.cell(1, 3))
-    brake_table.cell(0, 4).text = 'Примечание'
-    brake_table.cell(0, 4).merge(brake_table.cell(1, 4))
+    break_table = doc.add_table(len(fail_str_begin) + 2, 5, doc.styles['Table Grid'])
+    break_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    break_table.cell(0, 0).text = '№'
+    break_table.cell(0, 0).merge(break_table.cell(1, 0))
+    break_table.cell(0, 1).text = 'Время простоя'
+    break_table.cell(1, 1).text = 'c'
+    break_table.cell(1, 2).text = 'по'
+    break_table.cell(0, 1).merge(break_table.cell(0, 2))
+    break_table.cell(0, 3).text = 'Кол-во потерянных минут (период)'
+    break_table.cell(0, 3).merge(break_table.cell(1, 3))
+    break_table.cell(0, 4).text = 'Примечание'
+    break_table.cell(0, 4).merge(break_table.cell(1, 4))
 
-    # word_addition.make_table_bold(brake_table, cols=5, rows=len(fail_str_begin) + 2)
+    for i in range(2, len(fail_str_begin) + 2):
+        break_table.cell(i, 0).text = str(break_frame['detector'][i - 2])
+        break_table.cell(i, 1).text = fail_str_begin[i - 2]
+        break_table.cell(i, 2).text = fail_str_end[i - 2]
+        break_table.cell(i, 3).text = str(lost_minutes[i - 2])
+        break_table.cell(i, 4).text = ' '
+
+    word_addition.make_table_bold(break_table, cols=5, rows=len(fail_str_begin) + 2)
     doc.add_paragraph()
 
     stat_table_title = doc.add_paragraph(r'Таблица 3: Средние скорости счета [(300с)⁻¹]', style='PItalic')

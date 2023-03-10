@@ -1,4 +1,3 @@
-
 import datetime
 
 from docx.enum.style import WD_STYLE_TYPE
@@ -40,9 +39,11 @@ def add_page_number(paragraph):
     page_num_run._r.append(instr_text)
     page_num_run._r.append(fld_char2)
 
+
 def page_breaker(doc):
     run = doc.add_paragraph().add_run()
     run.add_break(WD_BREAK.PAGE)
+
 
 def add_new_styles(document, style_name: str, font_size: int, bold: bool = False, italic: bool = False):
     """Метод, добавляющий стили текста."""
@@ -55,6 +56,7 @@ def add_new_styles(document, style_name: str, font_size: int, bold: bool = False
     font.bold = bold
     font.italic = italic
 
+
 def section_choice(document):
     """Метод, добавляющий отступы в документе word."""
     sections = document.sections
@@ -63,6 +65,7 @@ def section_choice(document):
         section.bottom_margin = Cm(1.5)
         section.left_margin = Cm(1.5)
         section.right_margin = Cm(1.5)
+
 
 def make_table_bold(table, cols, rows):
     """Метод, изменяющий вес шрифтов в таблицах и выравнивающий таблицу по центру."""
@@ -83,11 +86,13 @@ def make_table_bold(table, cols, rows):
             run.font.bold = True
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
+
 def change_cell_size(table, column_num, size_arr):
     """Метод, меняющий размер клеток в таблице."""
     for i in range(column_num):
         for cell in table.columns[i].cells:
             cell.width = Inches(size_arr[i])
+
 
 def adding_graphic(document, title, picture_path, width: float, height: float):
     """Метод, добавляющий в word график."""
@@ -97,16 +102,16 @@ def adding_graphic(document, title, picture_path, width: float, height: float):
     picture_title = document.add_paragraph(title, style='PItalic')
     picture_title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-def time_breaks_counter(brake_frame):
-    breaks = len(brake_frame.index)
+
+def time_breaks_counter(break_frame):
     fail_str_begin = []
     fail_str_end = []
     lost_minutes = []
-    for i in range(len(brake_frame.index)):
-        fail_str_begin.append(f"{brake_frame['StartDate'][i]}  {brake_frame['StartTime'][i]}")
-        fail_str_end.append(f"{brake_frame['EndDate'][i]}  {brake_frame['EndTime'][i]}")
-        lost_minutes.append(round((datetime.datetime.combine(brake_frame['EndDate'][i],
-                                                             brake_frame['EndTime'][i]) -
-                                   datetime.datetime.combine(brake_frame['StartDate'][i],
-                                                             brake_frame['StartTime'][i])).total_seconds() / 60, 2))
-    return fail_str_begin, fail_str_end, lost_minutes, breaks
+    for i in range(len(break_frame.index)):
+        fail_str_begin.append(f"{break_frame['StartDate'][i]}  {break_frame['StartTime'][i]}")
+        fail_str_end.append(f"{break_frame['EndDate'][i]}  {break_frame['EndTime'][i]}")
+        lost_minutes.append(round((datetime.datetime.combine(break_frame['EndDate'][i],
+                                                             break_frame['EndTime'][i]) -
+                                   datetime.datetime.combine(break_frame['StartDate'][i],
+                                                             break_frame['StartTime'][i])).total_seconds() / 60, 2))
+    return fail_str_begin, fail_str_end, lost_minutes

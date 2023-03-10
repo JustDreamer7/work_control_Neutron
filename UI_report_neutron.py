@@ -90,7 +90,7 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
             files_path = report_path + '/without_mask_N_files'
             self.create_direct_checker(picture_path)
             self.create_direct_checker(files_path)
-            self.create_direct_checker(files_path+f'/{start_date.year}')
+            self.create_direct_checker(files_path + f'/{start_date.year}')
             neutron_data = NeutronFileReader.preparing_data(start_date=start_date,
                                                             end_date=end_date,
                                                             path_to_files=file_neutron_data)

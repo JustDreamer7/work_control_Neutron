@@ -37,6 +37,7 @@ class NeutronFileReader(FileReader):
         dt_file_path = self.making_file_path(file_directory='dt')
         dt_file = pd.read_csv(dt_file_path,
                               sep=r'\s[-]*\s*', header=None, skipinitialspace=True, index_col=False, engine='python')
+        # print(dt_file_path)
         dt_file.dropna(axis=1, how='all', inplace=True)
         dt_file.columns = self.columns
         dt_file['date'] = pd.to_datetime(dt_file['date']).dt.date
@@ -103,6 +104,7 @@ class NeutronFileReader(FileReader):
         if any(bad_end_time_index):
             file_today = file_data[file_data.index < bad_end_time_index[0]]
             file_day_after = file_data[file_data.index >= bad_end_time_index[0]]
+            # print(file_day_after['date'])
             file_day_after['date'] = [file_day_after['date'].item() + datetime.timedelta(
                 days=1)] * len(file_day_after.index)
             file_data = pd.concat([file_today, file_day_after], ignore_index=True)
@@ -133,6 +135,16 @@ class NeutronFileReader(FileReader):
             try:
                 concat_n_df = pd.concat([concat_n_df, filereader.reading_file()], ignore_index=True)
             except FileNotFoundError:
+                # zero_dict = defaultdict(list)
+                # datetime_item = list(concat_n_df['datetime'])[-1]
+                # while datetime_item < single_date + datetime.timedelta(hours=23, minutes=55):
+                #     datetime_item = datetime_item + datetime.timedelta(minutes=5)
+                #     zero_dict['datetime'].append(datetime_item)
+                #     zero_dict['date'].append(datetime_item.date())
+                #     for col in [f'Nn{i}' for i in range(1, 5)] + [f'N_noise{i}' for i in range(1, 5)] + [
+                #         'P_mm_rt_st_N', 'TN', 'AH']:
+                #         zero_dict[col].append(0)
+
                 print(f"File {filereader.making_file_path(file_directory='dt')}, does not exist")
         return concat_n_df[(concat_n_df['date'] >= start_date) & (concat_n_df['date'] <= end_date)].reset_index(
             drop=True)  # чтобы выровнять списки и фреймы по длине, так как в neutron_data есть один день
