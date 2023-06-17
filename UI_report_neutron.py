@@ -94,6 +94,15 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
             neutron_data = NeutronFileReader.preparing_data(start_date=start_date,
                                                             end_date=end_date,
                                                             path_to_files=file_neutron_data)
+            neutron_data = DbFileReader.db_preparing_data(start_date=start_date,
+                                                           end_date=end_date,
+                                                           path_to_db=os.environ.get('POSTGRES_DB_URL'))
+            pressure_data = DbFileReader.db_preparing_data(start_date=start_date,
+                                                           end_date=end_date,
+                                                           path_to_db=os.environ.get('POSTGRES_DB_URL'))
+            vaisala = DbFileReader.db_preparing_data(start_date=start_date,
+                                                           end_date=end_date,
+                                                           path_to_db=os.environ.get('POSTGRES_DB_URL'))
             pressure_data = PressureFileReader.preparing_data(start_date=start_date,
                                                               end_date=end_date,
                                                               path_to_files=file_uragan_pressure)
@@ -147,16 +156,17 @@ class Passport(QtWidgets.QMainWindow, Ui_MainWindow):
             neutron_data = NeutronFileReader.preparing_data(start_date=start_date,
                                                             end_date=end_date,
                                                             path_to_files=file_neutron_data)
+            neutron_data = NeutronFileReader.correct_neutron_data(neutron_data)
             accessory_data = AccessoryFileReader(start_date=start_date, end_date=end_date,
                                                  path_to_files=file_neutron_data)
             pressure_data = PressureFileReader.preparing_data(start_date=start_date,
                                                               end_date=end_date,
                                                               path_to_files=file_uragan_pressure)
 
-            pressure_data = NeutronFileReader.cutting_pressure_data_from_neutron_data(neutron_data=neutron_data,
-                                                                                      pressure_data=pressure_data)
-            neutron_data = PressureFileReader.cutting_neutron_data_from_pressure_data(neutron_data=neutron_data,
-                                                                                      pressure_data=pressure_data)
+            # pressure_data = NeutronFileReader.cutting_pressure_data_from_neutron_data(neutron_data=neutron_data,
+            #                                                                           pressure_data=pressure_data)
+            # neutron_data = PressureFileReader.cutting_neutron_data_from_pressure_data(neutron_data=neutron_data,
+            #                                                                           pressure_data=pressure_data)
 
             for mask_det in range(1, 5):
                 try:

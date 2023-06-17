@@ -26,7 +26,7 @@ class AccessoryFileReader:
     def r_file_reader(self):
         r_file_name = f'4R{self.single_date.month:02}-{self.single_date.day:02}.{self.single_date.year - 2000:02}'
         try:
-            r_file_path = self.making_file_path(file_directory='sp',
+            r_file_path = self.making_file_path(file_directory=f'{self.single_date.year}\\sp',
                                                 file_name=r_file_name)
             r_distribution = pd.read_csv(r_file_path, sep=' ', header=None, skipinitialspace=True, index_col=0)
             r_distribution.dropna(axis=1, how='all', inplace=True)
@@ -38,7 +38,7 @@ class AccessoryFileReader:
     def front_time_data_reader(self):
         ft_file_name = f'4Tf{self.single_date.month:02}-{self.single_date.day:02}.{self.single_date.year - 2000:02}'
         try:
-            ft_file_path = self.making_file_path(file_directory='sp',
+            ft_file_path = self.making_file_path(file_directory=f'{self.single_date.year}\\sp',
                                                  file_name=ft_file_name)
             front_time_data = pd.read_csv(ft_file_path, sep=' ', header=None, skipinitialspace=True, index_col=0)
             front_time_data.dropna(axis=1, how='all', inplace=True)
@@ -51,7 +51,7 @@ class AccessoryFileReader:
         try:
             n_amp_file_name = f'4sp{self.single_date.month:02}-{self.single_date.day:02}' \
                               f'.{self.single_date.year - 2000:02}'
-            n_amp_file_path = self.making_file_path(file_directory='sp',
+            n_amp_file_path = self.making_file_path(file_directory=f'{self.single_date.year}\\sp',
                                                     file_name=n_amp_file_name)
             n_amp_time_data = pd.read_csv(n_amp_file_path, sep=' ', header=None, skipinitialspace=True, index_col=0)
             n_amp_time_data.dropna(axis=1, how='all', inplace=True)

@@ -17,3 +17,12 @@ class DateError(Exception):
         msg.setInformativeText(self.__str__())
         msg.setWindowTitle("Error")
         msg.exec()
+
+class DateTimeError(Exception):
+    def __init__(self, single_date, message='В файле есть откат по времени.'):
+        self.message = message
+        self.single_date = single_date
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f'{self.single_date}: {self.message}'

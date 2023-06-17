@@ -2,6 +2,7 @@ import pathlib
 
 import cycler
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 class GraphsDrawing:
@@ -131,6 +132,7 @@ class GraphsDrawing:
                 ax.set_xlabel('Дата', fontsize=20)
             ax.set_ylabel('Cкорость счета, (300с)⁻¹', fontsize=16)
             ax.set_xlim([0, neutron_data.index.max()])
+            ax.set_ylim([0, np.median(neutron_data[f'{type_of_impulse}{det}']) * 1.5])
             ax.minorticks_on()
             ax.tick_params(axis='both', which='minor', direction='out', length=10, width=2, pad=10)
             ax.tick_params(axis='both', which='major', direction='out', length=20, width=4, pad=10)
@@ -141,6 +143,7 @@ class GraphsDrawing:
 
             ax0.scatter(range(0, len(pressure_data)), pressure_data, s=2, c='blue')
             ax.set_xticks(list(range(0, neutron_data.index.max(), 288 * 4)))
+            print(neutron_data['date'].unique().tolist()[::4])
             ax.set_xticklabels(neutron_data['date'].unique().tolist()[::4])
 
         path_pic = pathlib.PurePath(self.path_to_pic, f'{type_of_impulse}300c{self.start_date.day}-'

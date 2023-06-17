@@ -1,10 +1,11 @@
 import time
-
+import datetime
+import numpy as np
 import pandas as pd
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-
+from collections import defaultdict
 import word_addition
 from graph_drawer import GraphsDrawing
 from proccessing_data_neutron import ProccessingNeutron
@@ -43,9 +44,28 @@ def make_report_neutron(start_date, end_date, report_path, picture_path, neutron
                                         corr_for_neutron_data=parameters_dict['correction_for_noise'],
                                         pressure_data=pressure_data,
                                         type_of_impulse='N_noise')
+    mask_event_dict = defaultdict(list)
+    for det in range(1, 5):
+        n_check_df = neutron_data[neutron_data[f'Nn{det}'] > np.median(neutron_data[f'Nn{det}']) * 1.5]
+        noise_check_df = neutron_data[neutron_data[f'N_noise{det}'] > np.median(neutron_data[f'N_noise{det}']) * 1.5]
+        for row in list(n_check_df.index):
+            mask_event_dict['det'].append(det)
+            mask_event_dict['datetime'].append(n_check_df['datetime'][row])
+            mask_event_dict['type'].append('Нейтроны')
+            mask_event_dict['value'].append(n_check_df[f'Nn{det}'][row])
+            mask_event_dict['n/med'].append(round(n_check_df[f'Nn{det}'][row] / np.median(neutron_data[f'Nn{det}']), 2))
+
+        for row in list(noise_check_df.index):
+            mask_event_dict['det'].append(det)
+            mask_event_dict['datetime'].append(noise_check_df['datetime'][row])
+            mask_event_dict['type'].append('Шумы')
+            mask_event_dict['value'].append(noise_check_df[f'N_noise{det}'][row])
+            mask_event_dict['n/med'].append(
+                round(noise_check_df[f'N_noise{det}'][row] / np.median(neutron_data[f'N_noise{det}']), 2))
+
     r_distribution_data = accessory_data.r_file_reader()
 
-    front_time_data = accessory_data.r_file_reader()
+    front_time_data = accessory_data.front_time_data_reader()
 
     n_amp_data = accessory_data.n_amp_data_reader()
 
@@ -161,6 +181,28 @@ def make_report_neutron(start_date, end_date, report_path, picture_path, neutron
 
     word_addition.make_table_bold(b_table, cols=5, rows=3)
     word_addition.change_cell_size(b_table, column_num=5, size_arr=[3, 1.075, 1.075, 1.075, 1.075])
+    doc.add_paragraph()
+
+    mask_event_table_title = doc.add_paragraph('Таблица 6: События для внесения в маску', style='PItalic')
+    mask_event_table_title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+    mask_event_table = doc.add_table(len(mask_event_dict['det']) + 1, 5, doc.styles['Table Grid'])
+    mask_event_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    mask_event_table.cell(0, 0).text = '№ детектора'
+    mask_event_table.cell(0, 1).text = 'Время'
+    mask_event_table.cell(0, 2).text = 'Тип'
+    mask_event_table.cell(0, 3).text = 'Значение'
+    mask_event_table.cell(0, 4).text = 'N/N\u2098\u2091'
+
+    for event_idx in range(len(mask_event_dict['det'])):
+        mask_event_table.cell(event_idx + 1, 0).text = f'{mask_event_dict["det"][event_idx]}'
+        mask_event_table.cell(event_idx + 1, 1).text = f'{mask_event_dict["datetime"][event_idx]}'
+        mask_event_table.cell(event_idx + 1, 2).text = f'{mask_event_dict["type"][event_idx]}'
+        mask_event_table.cell(event_idx + 1, 3).text = f'{mask_event_dict["value"][event_idx]}'
+        mask_event_table.cell(event_idx + 1, 4).text = f'{mask_event_dict["n/med"][event_idx]}'
+
+    word_addition.make_table_bold(mask_event_table, cols=5, rows=len(mask_event_dict['det']) + 1)
+    word_addition.change_cell_size(b_table, column_num=5, size_arr=[1.075, 3, 1.075, 1.075, 1.075])
     doc.add_paragraph()
 
     word_addition.page_breaker(doc=doc)
